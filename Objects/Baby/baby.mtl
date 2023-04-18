@@ -1,0 +1,60 @@
+newmtl Material__10
+Ka 0 0 0
+Ns 3.9749
+Ks 0.752941 0.607843 0.490196
+Kd 0.803921 0.654902 0.643137
+map_Kd Material__10.jpg
+newmtl Material__11
+Ka 0 0 0
+Ns 3.9749
+Ks 0.752941 0.607843 0.490196
+Kd 0.803921 0.654902 0.643137
+map_Kd Material__11_1.jpg
+newmtl Material__2
+Ka 0 0 0
+Ns 95.5835
+Ks 0.898039 0.898039 0.898039
+Kd 0 0 0
+map_Kd Material__2_2.jpg
+newmtl Material__12
+Ka 0 0 0
+Ns 3.9749
+Ks 0.752941 0.607843 0.490196
+Kd 0.803921 0.654902 0.643137
+map_Kd Material__12_3.jpg
+newmtl Material__13
+Ka 0 0 0
+Ns 3.9749
+Ks 0.752941 0.607843 0.490196
+Kd 0.803921 0.654902 0.643137
+map_Kd Material__13_4.jpg
+newmtl Material__5
+Ka 0 0 0
+Ns 8.67114
+Ks 0.776471 0.419608 0.662745
+Kd 0.74902 0.509804 0.57647
+map_Kd Material__5_5.jpg
+newmtl Material__3
+Ka 0 0 0
+Ns 59.1455
+Ks 0.898039 0.898039 0.898039
+Kd 0.4 0.4 0.698039
+map_Kd Material__3_6.jpg
+newmtl Material__14
+Ka 0 0 0
+Ns 3.9749
+Ks 0.752941 0.607843 0.490196
+Kd 0.803921 0.654902 0.643137
+map_Kd Material__14_7.jpg
+newmtl Material__6
+Ka 0 0 0
+Ns 62.8028
+Ks 0.898039 0.898039 0.898039
+Kd 0.788235 0.788235 0.698039
+map_Kd Material__6_8.jpg
+newmtl Material__4
+Ka 0 0 0
+Ns 15.7998
+Ks 0.796078 0.678431 0.678431
+Kd 0.596079 0.658823 0.658823
+map_Kd Material__4_9.jpg

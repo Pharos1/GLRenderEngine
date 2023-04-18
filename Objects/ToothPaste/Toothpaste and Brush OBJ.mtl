@@ -1,0 +1,20 @@
+newmtl phong3SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Paste Diffuse.jpg
+bump Paste Normal.jpg -bm 1
+Ni 1.00
+Ks 0.33 0.33 0.33
+Ns 52.72
+newmtl phong4SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Brush Diffuse.jpg
+bump Brush Normal.jpg -bm 1
+Ni 1.00
+Ks 0.23 0.23 0.23
+Ns 18.00

@@ -1,0 +1,30 @@
+Tooth Paste and Toothbrush Polygon Model.
+
+Perfect for animations, visualizations & games.
+
+Features:
+
+Geometry - Polygons , Faces 1323 , Vertices 1612
+
+
+Available formats:  Autodesk FBX, Maya binary .mb and OBJ
+
+Realistic 3d Model with Clean Topology.
+
+UV Mapped - 1024x1024 JPG Textures
+
+Diffuse and Normal Maps
+
+Rendered with Mental Ray Maya 2011 and Maya Software 2011. 
+
+
+
+www.animatedheaven.weebly.com
+
+
+
+
+
+
+
+ 
