@@ -254,6 +254,7 @@ public:
 	void set4f(const std::string& name, float x, float y, float z, float w) const { glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w); }
 	void setMat4fv(const std::string& name, GLfloat* mat4) const { glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, mat4); }
 	void setMat4(const std::string& name, glm::mat4 mat4) const { glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat4)); }
+	void setMat3(const std::string& name, glm::mat3 mat3) const { glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat3)); }
 	void setVec2(const std::string& name, glm::vec2 vec2) const { glUniform2f(glGetUniformLocation(ID, name.c_str()), vec2.x, vec2.y); }
 	void setVec3(const std::string& name, glm::vec3 vec3) const { glUniform3f(glGetUniformLocation(ID, name.c_str()), vec3.x, vec3.y, vec3.z); }
 	void setVec4(const std::string& name, glm::vec4 vec4) const { glUniform4f(glGetUniformLocation(ID, name.c_str()), vec4.x, vec4.y, vec4.z, vec4.w); }

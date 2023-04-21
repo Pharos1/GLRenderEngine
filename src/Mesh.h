@@ -14,48 +14,48 @@
 #include <vector>
 using namespace std;
 
-std::vector<Vertex> skyboxVerts = {
-        Vertex(glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)), //BACK
-        Vertex(glm::vec3(0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
-        Vertex(glm::vec3(0.5f,  0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
-        Vertex(glm::vec3(0.5f,  0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
-        Vertex(glm::vec3(-0.5f,  0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
-        Vertex(glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
+std::vector<Vertex> skyboxVerts = { //Note: those are cube verts but the faces are flipped
+        Vertex(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)), //BACK
+        Vertex(glm::vec3(1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
+        Vertex(glm::vec3(1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
+        Vertex(glm::vec3(1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
+        Vertex(glm::vec3(-1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
+        Vertex(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
 
-        Vertex(glm::vec3(0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)), //FRONT
-        Vertex(glm::vec3(0.5f, -0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
-        Vertex(glm::vec3(-0.5f, -0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
-        Vertex(glm::vec3(-0.5f, -0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
-        Vertex(glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
-        Vertex(glm::vec3(0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
+        Vertex(glm::vec3(1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)), //FRONT
+        Vertex(glm::vec3(1.f, -1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
+        Vertex(glm::vec3(-1.f, -1.f,  1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
+        Vertex(glm::vec3(-1.f, -1.f,  1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
+        Vertex(glm::vec3(-1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
+        Vertex(glm::vec3(1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
 
-        Vertex(glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)), //RIGHT
-        Vertex(glm::vec3(-0.5f,  0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
-        Vertex(glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
-        Vertex(glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
-        Vertex(glm::vec3(-0.5f, -0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
-        Vertex(glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
+        Vertex(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)), //RIGHT
+        Vertex(glm::vec3(-1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
+        Vertex(glm::vec3(-1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
+        Vertex(glm::vec3(-1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
+        Vertex(glm::vec3(-1.f, -1.f,  1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
+        Vertex(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
 
-        Vertex(glm::vec3(0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)), //LEFT
-        Vertex(glm::vec3(0.5f,  0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
-        Vertex(glm::vec3(0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
-        Vertex(glm::vec3(0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
-        Vertex(glm::vec3(0.5f, -0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
-        Vertex(glm::vec3(0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
+        Vertex(glm::vec3(1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)), //LEFT
+        Vertex(glm::vec3(1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
+        Vertex(glm::vec3(1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
+        Vertex(glm::vec3(1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
+        Vertex(glm::vec3(1.f, -1.f,  1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
+        Vertex(glm::vec3(1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
 
-        Vertex(glm::vec3(0.5f, -0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)), //BOTTOM
-        Vertex(glm::vec3(0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
-        Vertex(glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
-        Vertex(glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
-        Vertex(glm::vec3(-0.5f, -0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
-        Vertex(glm::vec3(0.5f, -0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
+        Vertex(glm::vec3(1.f, -1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)), //BOTTOM
+        Vertex(glm::vec3(1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
+        Vertex(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
+        Vertex(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
+        Vertex(glm::vec3(-1.f, -1.f,  1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
+        Vertex(glm::vec3(1.f, -1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
 
-        Vertex(glm::vec3(-0.5f,  0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)), //TOP
-        Vertex(glm::vec3(0.5f,  0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
-        Vertex(glm::vec3(0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
-        Vertex(glm::vec3(0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
-        Vertex(glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
-        Vertex(glm::vec3(-0.5f,  0.5f, -0.5f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
+        Vertex(glm::vec3(-1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)), //TOP
+        Vertex(glm::vec3(1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(1.0f, 1.0f)),
+        Vertex(glm::vec3(1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
+        Vertex(glm::vec3(1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(1.0f, 0.0f)),
+        Vertex(glm::vec3(-1.f,  1.f,  1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)),
+        Vertex(glm::vec3(-1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
     };
 
 //Todo: specular textures stay forever in the frag shader so i should learn more and maybe zero its index at the end of the draw call.
@@ -177,7 +177,7 @@ public:
             else number = "1";
             //std::cout << ("material." + name + number).c_str() << std::endl;
 
-            shader.set1i(("material." + name + number).c_str(), i);
+            shader.set1i(("material." + name + number).c_str(), i); //This could be move to the setup func for performance sake
             //std::cout << number;
             //glUniform1i(glGetUniformLocation(shader.getID(), ("material." + name + number).c_str()), i);
             //std::cout << textures.size() << std::endl;

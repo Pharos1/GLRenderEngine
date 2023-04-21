@@ -175,14 +175,23 @@
   <ItemGroup>
     <None Include="Shaders\bloom.frag" />
     <None Include="Shaders\blur.frag" />
+    <None Include="Shaders\brdfShader.frag" />
+    <None Include="Shaders\brdfShader.vert" />
     <None Include="Shaders\cubemapShadow.frag" />
     <None Include="Shaders\cubemapShadow.geom" />
     <None Include="Shaders\cubemapShadow.vert" />
     <None Include="Shaders\debug.frag" />
     <None Include="Shaders\deferred.frag" />
+    <None Include="Shaders\EquirectangularToCubemap.frag" />
+    <None Include="Shaders\EquirectangularToCubemap.vert" />
     <None Include="Shaders\hdr.frag" />
+    <None Include="Shaders\irradianceConvolution.frag" />
+    <None Include="Shaders\irradianceConvolution.vert" />
+    <None Include="Shaders\irradianceSkybox.frag" />
+    <None Include="Shaders\irradianceSkybox.vert" />
     <None Include="Shaders\lightpass.frag" />
     <None Include="Shaders\PBR.frag" />
+    <None Include="Shaders\PBR.vert" />
     <None Include="Shaders\postProc.frag" />
     <None Include="Shaders\renderQuad.frag" />
     <None Include="Shaders\renderQuad.vert" />
@@ -192,6 +201,8 @@
     <None Include="Shaders\shadow.vert" />
     <None Include="Shaders\skybox.frag" />
     <None Include="Shaders\skybox.vert" />
+    <None Include="Shaders\prefilter.frag" />
+    <None Include="Shaders\prefilter.vert" />
     <None Include="Shaders\SSAO.frag" />
     <None Include="Shaders\SSAO.vert" />
   </ItemGroup>
