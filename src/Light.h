@@ -5,27 +5,27 @@
 #include<GLM/glm.hpp>
 #include "Shader.h"
 struct Light {
-    glm::vec3 ambient;
+    //glm::vec3 ambient;
     glm::vec3 diffuse;
-    glm::vec3 specular;
+    //glm::vec3 specular;
 };
 class DirLight : public Light {
 public:
     glm::vec3 dir;
 
-    DirLight(glm::vec3 dir = glm::vec3(0.f), glm::vec3 ambient = glm::vec3(0.f), glm::vec3 diffuse = glm::vec3(0.f), glm::vec3 specular = glm::vec3(0.f)) {
+    DirLight(glm::vec3 dir = glm::vec3(0.f), glm::vec3 diffuse = glm::vec3(0.f)) {
         this->dir = dir;
 
-        this->ambient = ambient;
+        //this->ambient = ambient;
         this->diffuse = diffuse;
-        this->specular = specular;
+        //this->specular = specular;
     }
     void set(Shader& shader, std::string lightName) {
         shader.setVec3(lightName + ".direction", dir);
 
-        shader.setVec3(lightName + ".ambient", ambient);
+        //shader.setVec3(lightName + ".ambient", ambient);
         shader.setVec3(lightName + ".diffuse", diffuse);
-        shader.setVec3(lightName + ".specular", specular);
+        //shader.setVec3(lightName + ".specular", specular);
     }
 };
 class PointLight : public Light {
@@ -36,23 +36,23 @@ public:
     float linear;
     float quadratic;
 
-    PointLight(glm::vec3 pos = glm::vec3(0.f), glm::vec3 ambient = glm::vec3(0.f), glm::vec3 diffuse = glm::vec3(0.f), glm::vec3 specular = glm::vec3(0.f), float constant = 1.f, float linear = .014f, float quadratic = .000007f) {
+    PointLight(glm::vec3 pos = glm::vec3(0.f), glm::vec3 diffuse = glm::vec3(0.f), float constant = 1.f, float linear = .014f, float quadratic = .000007f) {
         this->pos = pos;
 
         this->constant = constant;
         this->linear = linear;
         this->quadratic = quadratic;
 
-        this->ambient = ambient;
+        //this->ambient = ambient;
         this->diffuse = diffuse;
-        this->specular = specular;
+        //this->specular = specular;
     }
     void set(Shader& shader, std::string lightName) {
         shader.setVec3(lightName + ".position", pos);
 
-        shader.setVec3(lightName + ".ambient", ambient);
+        //shader.setVec3(lightName + ".ambient", ambient);
         shader.setVec3(lightName + ".diffuse", diffuse);
-        shader.setVec3(lightName + ".specular", specular);
+        //shader.setVec3(lightName + ".specular", specular);
 
         shader.set1f(lightName + ".constant", constant);
         shader.set1f(lightName + ".linear", linear);
@@ -71,7 +71,10 @@ public:
     float cutOff;
     float outerCutOff;
 
-    SpotLight(glm::vec3 pos = glm::vec3(0.f), glm::vec3 dir = glm::vec3(0.f), glm::vec3 ambient = glm::vec3(0.f), glm::vec3 diffuse = glm::vec3(0.f), glm::vec3 specular = glm::vec3(0.f), float constant = 1.f, float linear = .09f, float quadratic = .032f, float cutOff = 0.f, float outerCutOff = 0.f) {
+    float cosCutOff;
+    float cosOuterCutOff;
+
+    SpotLight(glm::vec3 pos = glm::vec3(0.f), glm::vec3 dir = glm::vec3(0.f), glm::vec3 diffuse = glm::vec3(0.f), float constant = 1.f, float linear = .09f, float quadratic = .032f, float cutOff = 0.f, float outerCutOff = 0.f) {
         this->pos = pos;
         this->dir = dir;
 
@@ -79,27 +82,43 @@ public:
         this->linear = linear;
         this->quadratic = quadratic;
 
-        this->ambient = ambient;
+        //this->ambient = ambient;
         this->diffuse = diffuse;
-        this->specular = specular;
+        //this->specular = specular;
 
         this->cutOff = cutOff;
         this->outerCutOff = outerCutOff;
+
+        updateCosCutOff();
+        updateCosOuterCutOff();
+    }
+    void updateCosCutOff() {
+        if (cutOff > outerCutOff)
+            std::cout << "WARNING::LIGHT.H::SPOTLIGHT::Inner cut off is bigger than the outer cut off!" << std::endl;
+        cosCutOff = glm::cos(glm::radians(cutOff));
+    }
+    void updateCosOuterCutOff() {
+        if (cutOff > outerCutOff)
+            std::cout << "WARNING::LIGHT.H::SPOTLIGHT::Inner cut off is bigger than the outer cut off!" << std::endl;
+        cosOuterCutOff = glm::cos(glm::radians(outerCutOff)); 
     }
     void set(Shader& shader, std::string lightName) {
         shader.setVec3(lightName + ".position", pos);
         shader.setVec3(lightName + ".direction", dir);
 
-        shader.setVec3(lightName + ".ambient", ambient);
+        //shader.setVec3(lightName + ".ambient", ambient);
         shader.setVec3(lightName + ".diffuse", diffuse);
-        shader.setVec3(lightName + ".specular", specular);
+        //shader.setVec3(lightName + ".specular", specular);
 
         shader.set1f(lightName + ".constant", constant);
         shader.set1f(lightName + ".linear", linear);
         shader.set1f(lightName + ".quadratic", quadratic);
 
-        shader.set1f(lightName + ".cutOff", cutOff);
-        shader.set1f(lightName + ".outerCutOff", outerCutOff);
+        updateCosCutOff();
+        updateCosOuterCutOff();
+
+        shader.set1f(lightName + ".cutOff", cosCutOff);
+        shader.set1f(lightName + ".outerCutOff", cosOuterCutOff);
     }
 };
 #endif

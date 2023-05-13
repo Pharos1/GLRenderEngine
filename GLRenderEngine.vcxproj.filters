@@ -15,7 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="glad.c">
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\imgui\imgui.cpp">
@@ -39,11 +42,41 @@
     <ClCompile Include="src\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DeltaTime.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Flags.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Light.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\todo.txt">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\imgui\imconfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -71,69 +104,41 @@
     <ClInclude Include="src\imgui\imstb_truetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DeltaTime.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Flags.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Light.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Model.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\todo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Vertex.h">
+    <ClInclude Include="src\Query.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\bloom.frag" />
     <None Include="Shaders\blur.frag" />
-    <None Include="Shaders\cubemapShadow.frag" />
-    <None Include="Shaders\cubemapShadow.geom" />
-    <None Include="Shaders\cubemapShadow.vert" />
+    <None Include="Shaders\Shadow\cubemapShadow.frag" />
+    <None Include="Shaders\Shadow\cubemapShadow.geom" />
+    <None Include="Shaders\Shadow\cubemapShadow.vert" />
     <None Include="Shaders\debug.frag" />
     <None Include="Shaders\deferred.frag" />
     <None Include="Shaders\hdr.frag" />
-    <None Include="Shaders\lightpass.frag" />
-    <None Include="Shaders\PBR.frag" />
+    <None Include="Shaders\PBR\PBR.frag" />
     <None Include="Shaders\postProc.frag" />
     <None Include="Shaders\renderQuad.frag" />
     <None Include="Shaders\renderQuad.vert" />
-    <None Include="Shaders\shader.frag" />
-    <None Include="Shaders\shader.vert" />
-    <None Include="Shaders\shadow.frag" />
-    <None Include="Shaders\shadow.vert" />
+    <None Include="Shaders\main.frag" />
+    <None Include="Shaders\main.vert" />
+    <None Include="Shaders\Shadow\shadow.frag" />
+    <None Include="Shaders\Shadow\shadow.vert" />
     <None Include="Shaders\skybox.frag" />
     <None Include="Shaders\skybox.vert" />
     <None Include="Shaders\SSAO.frag" />
     <None Include="Shaders\SSAO.vert" />
-    <None Include="Shaders\PBR.vert" />
-    <None Include="Shaders\EquirectangularToCubemap.vert" />
-    <None Include="Shaders\EquirectangularToCubemap.frag" />
-    <None Include="Shaders\irradianceSkybox.frag" />
-    <None Include="Shaders\irradianceSkybox.vert" />
-    <None Include="Shaders\irradianceConvolution.vert" />
-    <None Include="Shaders\irradianceConvolution.frag" />
-    <None Include="Shaders\prefilter.frag" />
-    <None Include="Shaders\prefilter.vert" />
-    <None Include="Shaders\brdfShader.vert" />
-    <None Include="Shaders\brdfShader.frag" />
+    <None Include="Shaders\PBR\PBR.vert" />
+    <None Include="Shaders\PBR\EquirectangularToCubemap.frag" />
+    <None Include="Shaders\PBR\hdrSkybox.frag" />
+    <None Include="Shaders\PBR\irradianceConvolution.frag" />
+    <None Include="Shaders\PBR\prefilter.frag" />
+    <None Include="Shaders\PBR\brdfShader.vert" />
+    <None Include="Shaders\PBR\brdfShader.frag" />
+    <None Include="Shaders\cubemap.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="src\bottleneck.txt" />
   </ItemGroup>
 </Project>

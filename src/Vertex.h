@@ -10,7 +10,7 @@ struct Vertex {
     glm::vec3 Tangent;
     //glm::vec3 Bitangent;
 
-    Vertex(glm::vec3 pos = glm::vec3(0.f), glm::vec3 norm = glm::vec3(0.f), glm::vec2 texCoords = glm::vec2(0.f), glm::vec3 tangent = glm::vec3(1.f, 0.f, 0.f)){//, glm::vec3 bitangent = glm::vec3(0.f, 1.f, 0.f)) {
+    Vertex(glm::vec3 pos = glm::vec3(0.f), glm::vec3 norm = glm::vec3(0.f), glm::vec2 texCoords = glm::vec2(0.f), glm::vec3 tangent = glm::vec3(0.f)){//, glm::vec3 tangent = glm::vec3(1.f, 0.f, 0.f)) {//, glm::vec3 bitangent = glm::vec3(0.f, 1.f, 0.f)) {
         Position = pos;
         Normal = norm;
         TexCoords = texCoords;

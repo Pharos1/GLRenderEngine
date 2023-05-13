@@ -7,9 +7,11 @@
 #include<string>
 #include<vector>
 
-#include<GLAD/glad.h>
-#include<GLFW/glfw3.h>
-#include<SOIL/stb_image.h>
+//#include<GLAD/glad.h>
+#include <GLAD/gl.h>
+#include <GLFW/glfw3.h>
+#include <SOIL2/stb_image.h>
+#include <SOIL2/SOIL2.h>
 
 //Todo: maybe make a framebuffer class and make cubemap class and make other classes that inherit from the Texture class and probably shadowMap and rbo
 
@@ -21,67 +23,67 @@ public:
 	int nrChannels;
 
 	std::string type;
-	std::string path;
-	std::string fileName;
+	std::string path = "";
+	std::string fileName = "";
 
 	GLuint id;
 
+	bool initialized = false;
+
 	GLuint getID() const { return this->id; }
 	void bind(const GLint texture_unit) {
+		if (!initialized) {
+			std::cout << "ERROR::TEXTURE.H::TEXTURE NOT INITIALIZED" << std::endl;
+			return;
+		}
+
 		glActiveTexture(GL_TEXTURE0 + texture_unit);
 		glBindTexture(this->glType, this->id);
 	}
-	void unbind() {
-		glActiveTexture(0);
+	void unbind(const GLint texture_unit) {
+		glActiveTexture(GL_TEXTURE0 + texture_unit);
 		glBindTexture(this->glType, 0);
 	}
 	void deleteTexture() {
 		glDeleteTextures(1, &this->id);
 	}
-};
-class ClassicTexture : public Texture {
 
-public:
-	ClassicTexture(std::string path, std::string type = "texture_diffuse", GLenum glType = GL_TEXTURE_2D) {
+	Texture(std::string path, bool invertY = false, std::string type = "texture_diffuse", GLenum glType = GL_TEXTURE_2D) {
+		initialized = true;
+
 		//Note: glGenTexture generates n number of texture ids and sends them to the second parameter
 		//Note: glActiveTexture sets the texture unit that glBindTexture will bind to(starting from 0)
 		//Note: glBindTexture sets the texture id(sec parameter) to the texture unit(from glActiveTexture) if glActive texture wasn't called before it is bind to GL_TEXTURE0 
 
 		this->path = path;
-		this->fileName = path.substr(path.find_last_of('/') + 1);
+		this->fileName = path.substr(path.find_last_of('/') + 1); //Sometimes \ is used instead of / so this could not be that reliable
 		this->type = type;
 		this->glType = glType;
+		
+		if(invertY) this->id = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGBA, 0, SOIL_FLAG_INVERT_Y);
+		else this->id = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGBA, 0, 0);
 
-		//stbi_set_flip_vertically_on_load(true); //Note: if flip uvs is on in ModelLoading and this is on then it will mess up the textures
+		if (id) {
+			glTexParameteri(glType, GL_TEXTURE_WRAP_S, GL_REPEAT); //Note: When using transparency its good to use GL_CLAMP_TO_EDGE instead of GL_REPEAT to prevent interpolation of colors on the top of the texture
+			glTexParameteri(glType, GL_TEXTURE_WRAP_T, GL_REPEAT); //and here also
+			glTexParameteri(glType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(glType, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-		unsigned char* image = stbi_load(path.c_str(), &this->width, &this->height, &nrChannels, STBI_rgb_alpha);
-
-		glGenTextures(1, &this->id);
-		glBindTexture(glType, this->id);
-
-
-		glTexParameteri(glType, GL_TEXTURE_WRAP_S, GL_REPEAT); //Note: When using transparency its good to use GL_CLAMP_TO_EDGE instead of GL_REPEAT to prevent interpolation of colors on the top of the texture
-		glTexParameteri(glType, GL_TEXTURE_WRAP_T, GL_REPEAT); //and here also
-		glTexParameteri(glType, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(glType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-		if (image) {
-			glTexImage2D(glType, 0, GL_RGBA, this->width, this->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image); //Note: if your textures are in sRGB you should use GL_SRGB or GL_SRGB_ALPHA for the internalType(the 3rd variable)
 			glGenerateMipmap(glType);
 		}
-		else {
-			std::cout << "ERROR::TEXTURE::TEXTURE_LOADING_FAILED: " << path << "\n";
-		}
+		else
+			std::cout << "ERROR::SOIL LAST RESULT: '" << SOIL_last_result() << "' while loading: " << path << std::endl;
 
-		glActiveTexture(0); //Unbind
+		glActiveTexture(GL_TEXTURE0); //Unbind
 		glBindTexture(glType, 0);
-		stbi_image_free(image);
 	}
-	ClassicTexture() {};
+	Texture() {};
 };
 class CubemapTexture : public Texture {
 public:
 	CubemapTexture(std::vector<std::string> faces) {
+		initialized = true;
+
 		glGenTextures(1, &this->id);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, this->id);
 
@@ -107,9 +109,10 @@ public:
 	}
 	CubemapTexture() {};
 };
-class EquirectangularMap : public Texture{
+class HDRMap : public Texture{
 public:
-	EquirectangularMap(std::string path, GLuint glType = GL_TEXTURE_2D) {
+	HDRMap(std::string path, GLuint glType = GL_TEXTURE_2D) {
+		initialized = true;
 		stbi_set_flip_vertically_on_load(true);
 
 		this->glType = glType;
@@ -130,5 +133,6 @@ public:
 		else
 			std::cout << "Failed to load HDR image." << std::endl;
 	}
+	HDRMap() {};
 };
 #endif

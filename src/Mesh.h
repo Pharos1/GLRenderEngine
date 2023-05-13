@@ -1,7 +1,8 @@
 #ifndef MESH
 #define MESH
 
-#include <GLAD/glad.h>
+//#include <GLAD/glad.h>
+#include <GLAD/gl.h>
 
 #include <GLM/glm.hpp>
 #include <GLM/gtc/matrix_transform.hpp>
@@ -9,10 +10,10 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "Vertex.h"
+#include "Material.h"
 
 #include <string>
 #include <vector>
-using namespace std;
 
 std::vector<Vertex> skyboxVerts = { //Note: those are cube verts but the faces are flipped
         Vertex(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 0.0f)), //BACK
@@ -61,9 +62,9 @@ std::vector<Vertex> skyboxVerts = { //Note: those are cube verts but the faces a
 //Todo: specular textures stay forever in the frag shader so i should learn more and maybe zero its index at the end of the draw call.
 class Mesh {
 public:
-    vector<Vertex>       vertices;
-    vector<unsigned int> indices;
-    vector<Texture>      textures;
+    std::vector<Vertex>       vertices;
+    std::vector<unsigned int> indices;
+    std::vector<Texture>      textures;
     unsigned int VAO;
     /*
     Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures) {
@@ -142,29 +143,19 @@ public:
         //glEnableVertexAttribArray(4);
     }
 };
-
 class ClassicMesh : public Mesh {
 public:
-    ClassicMesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures) {
+    ClassicMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices = {}) {
         this->vertices = vertices;
         this->indices = indices;
-        this->textures = textures;
-
-        for (int i = 0; i < textures.size(); i++) {
-            std::cout << textures[i].path;
-            std::cout << " :: ";
-            std::cout << textures[i].getID();
-            std::cout << " :: ";
-            std::cout << textures[i].type << std::endl;
-        }
 
         setupMesh();
     }
     ClassicMesh() {};
 
-    void Draw(Shader& shader, bool enabled = true) {
-        if (!enabled) return;
+    void Draw(Shader& shader) {
         shader.use();
+        /*
         unsigned int diffuseNr = 1;
         unsigned int specularNr = 1;
         for (unsigned int i = 0; i < textures.size(); i++) {
@@ -183,6 +174,7 @@ public:
             //std::cout << textures.size() << std::endl;
             textures[i].bind(i);
         }
+        */
 
         // draw mesh
         glBindVertexArray(VAO);
@@ -195,6 +187,41 @@ public:
         }
         glBindVertexArray(0);
 
+        glActiveTexture(GL_TEXTURE0);
+    }
+};
+class MaterialMesh : public Mesh {
+public:
+    Material material;
+    Material* currentMaterial = &material;
+
+    MaterialMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices = {}, Material material = Material()) {
+        this->vertices = vertices;
+        this->indices = indices;
+        this->material = material;
+
+        setupMesh();
+    }
+    MaterialMesh() {};
+    MaterialMesh(const MaterialMesh& other) : Mesh(other){
+        currentMaterial = &material;
+    }
+
+    void Draw(Shader& shader) {
+        shader.use();
+
+        currentMaterial->bind(shader);
+
+        glBindVertexArray(VAO);
+
+        if (indices.size() != 0)
+            glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        else
+            glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+        glBindVertexArray(0);
+
+        currentMaterial->unbind();
         glActiveTexture(GL_TEXTURE0);
     }
 };
@@ -242,7 +269,7 @@ public:
 };
 class RenderQuad : public Mesh{
 public:
-    RenderQuad(vector<Vertex> vertices, vector<unsigned int> indices) {
+    RenderQuad(std::vector<Vertex> vertices, std::vector<unsigned int> indices = {}) {
         this->vertices = vertices;
         this->indices = indices;
 
@@ -250,10 +277,9 @@ public:
     }
     RenderQuad() {};
 
-    void Draw(Shader& shader, vector<unsigned int> textureIDs) {
+    void Draw(Shader& shader, std::vector<unsigned int> textureIDs) {
         // draw mesh
         shader.use();
-        shader.set1b("renderQuad", true);
 
         for(int i = 0; i < textureIDs.size(); i++){
             glActiveTexture(GL_TEXTURE0 + i);
@@ -275,7 +301,6 @@ public:
 
         //Default options
         glEnable(GL_DEPTH_TEST);
-        shader.set1b("renderQuad", false);
     }
 };
 #endif

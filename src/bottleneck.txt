@@ -1,0 +1,8 @@
+My Benchmark:
+	->initLibs and initOGL together took ~100ms
+	->Shader loading part took ~500ms
+	->initPBRVariables took ~285ms
+	->loading the pbrGun took ~850ms
+	->loading the pbrGun material took ~1538ms (every texture takes ~250ms)
+		->stbi_load took ~200ms(THIS IS BECAUSE OF THE SIZE OF THE TEXTURES)
+		->glTexImage2D took ~50ms

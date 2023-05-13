@@ -1,0 +1,38 @@
+Later on:
+Make better hdr and use better tone mapping techniques
+In texture class make it so i can list options with the "|" operator and learn how it works for listing like in post proccess options for assimp
+Make missing textures appear with pink and white squares
+Make textures not to strech but to start repeating if the (for example, plane) is too long
+Make Material class for the textures and make a function for setting to shader and edit mesh and model classes to work with that mat class
+Render cubes at light positions 
+
+At the end:
+do something with the tangent space calculations to increase performance cuz now its damn slow(IM SURE)
+Fix the fuking performance issues as there is a lot to improve. Especialy in the shaders.
+Different light emitters for pbr
+Use bitangent if available for performance
+flip uvs depending on the type of the model(its extension)
+make support for equirectangular and cubemap skyboxes 
+Make gizmo
+In mesh.h every node/mesh has its own transformation matrix(node->mTransformation https://stackoverflow.com/questions/68751664/how-to-get-the-position-of-the-imported-mesh-from-assimp) which is local, so It's damn niesh if I want to even render it with every mesh moved to it's correct mesh
+make pbr deferred compatable
+make options for shaders like useNormalMap or something like that
+make pointlights be marked with a white cube
+
+To learn:
+the fuking way the gpu works (Link: http://people.maths.ox.ac.uk/~gilesm/old/pp10/lec2_2x2.pdf)
+
+Good papers to implement:
+https://developer.download.nvidia.com/shaderlibrary/docs/shadow_PCSS.pdf
+
+Issues:
+Resizing fucks up with the screen rendering and it gets streched
+To be able to use screen resizing i would need to update some things when the size changes(e.g. gBuffer, quadRenderBuffer)
+PostProc shader does something with the matrices I guess so there is a really weird effect when moving in fullscreen maybe this is because some buffers have to be updated on resize
+
+Gamebreaking issues:
+In mesh.h skybox class, draw func i have everything messed up with ids and textures.
+No constructors will ever run from global scope so i shuld move for example clear color to the main func
+
+CPU::
+copy initialization should be removed by making, lets say, loadModel in Model.h instead of doing Model model = Model(...);
