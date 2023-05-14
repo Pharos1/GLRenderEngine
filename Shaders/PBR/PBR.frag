@@ -20,10 +20,14 @@ struct Material {
 struct DirLight{
 	vec3 direction;
 	vec3 diffuse;
+
+	float intensity;
 };
 struct PointLight {
 	vec3 position;
 	vec3 diffuse;
+	
+	float intensity;
 };
 struct SpotLight {
 	vec3 position;
@@ -32,9 +36,11 @@ struct SpotLight {
 
 	float cutOff;
 	float outerCutOff;
+	
+	float intensity;
 };
 
-#define NR_POINT_LIGHTS 3
+#define NR_POINT_LIGHTS 1
 
 uniform DirLight dirLight;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
@@ -52,7 +58,7 @@ uniform sampler2D   brdfLUT;
 uniform vec3 viewPos;
 
 uniform Material material;
-uniform bool iblSpecularity;
+uniform bool iblEnabled;
 
 uniform bool transformSRGB;
 uniform bool bloomOn;
@@ -62,6 +68,10 @@ uniform bool useNormalMap;
 uniform bool useMetallic;
 uniform bool useRoughness;
 uniform bool useAmbientMap;
+
+//Deferred
+uniform bool deferredEnabled;
+uniform int deferredState;
 
 const float PI = 3.14159265359;
 
@@ -147,7 +157,6 @@ void main(){
 
 	if(transformSRGB) albedo = pow(albedo, vec3(2.2f));
 
-
 	if(!useNormalMap || texture(material.normal, texCoord).rgb == vec3(0.f) || TBN == mat3(0.f)) //If normalMap is empty or you cant transform a normal map to a normal vector just use the vertex normal vector
 		aNormal = normal;
 	else
@@ -174,7 +183,7 @@ void main(){
 		result += CalcSpotLight(spotLight, albedo, aNormal, metallic, roughness, ao);
 
 	
-	result += CalcAmbient(albedo, aNormal, metallic, roughness, ao);
+	if(iblEnabled) result += CalcAmbient(albedo, aNormal, metallic, roughness, ao);
 
 	FragColor = vec4(result, 1.0);
 
@@ -217,7 +226,7 @@ vec3 CalcDirLight(DirLight light, vec3 albedo, vec3 normal, float metallic, floa
 	float NdotL = max(dot(normal, lightDir), 0.0);
 
 	// add to outgoing radiance Lo
-	Lo += (kD * albedo / PI + specular) * radiance * NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+	Lo += (kD * albedo / PI + specular) * radiance * NdotL * light.intensity; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
 	
 	return Lo;
 }
@@ -255,7 +264,7 @@ vec3 CalcPointLight(PointLight light, vec3 albedo, vec3 normal, float metallic, 
 	float NdotL = max(dot(normal, lightDir), 0.0);
 
 	// add to outgoing radiance Lo
-	Lo += (kD * albedo / PI + specular) * radiance * NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+	Lo += (kD * albedo / PI + specular) * radiance * NdotL * light.intensity; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
 	
 	return Lo;//texture(material.normal, texCoord).rgb;//(TBN * (texture(material.normal, texCoord).rgb*2.f-1.f))*0.5f + 0.5f;
 }
@@ -293,7 +302,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 albedo, vec3 normal, float metallic, fl
 	float NdotL = max(dot(normal, lightDir), 0.0);
 
 	// add to outgoing radiance Lo
-	Lo += (kD * albedo / PI + specular) * radiance * NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+	Lo += (kD * albedo / PI + specular) * radiance * NdotL * light.intensity; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
 	
 	//Spotlight range
 	float theta = dot(lightDir, normalize(-light.direction)); 
@@ -323,10 +332,7 @@ vec3 CalcAmbient(vec3 albedo, vec3 normal, float metallic, float roughness, floa
 	// ambient lighting (we now use IBL as the ambient term)
 	vec3 ambient;
 
-	if(iblSpecularity)
-		ambient = (kD * diffuse + specular) * ao;
-	else
-		ambient = (kD * diffuse) * ao;
+	ambient = (kD * diffuse + specular) * ao;
 	
 	return ambient;
 }

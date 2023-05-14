@@ -45,7 +45,7 @@ public:
 	void setCamSpeed(float camSpeed = 7.5f) { this->camSpeed = camSpeed; }
 
 	void processInput(GLFWwindow* window) {
-		float deltaTime = dt.getDT();
+		float deltaTime = dt.deltaTime;
 		float speedAmplifier = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ? 3.f : (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ? 0.15 : 1.f);
 
 

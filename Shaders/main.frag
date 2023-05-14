@@ -90,15 +90,15 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec2 texCoord, float shininess,
 vec3 getNormalFromMap(){
     vec3 tangentNormal = texture(material.normal, texCoord).xyz * 2.0 - 1.0;
 
-    vec3 Q1  = dFdx(worldPos);
-    vec3 Q2  = dFdy(worldPos);
-    vec2 st1 = dFdx(texCoord);
-    vec2 st2 = dFdy(texCoord);
-
-    vec3 N   = normalize(normal);
-    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
-    vec3 B  = -normalize(cross(N, T));
-    mat3 TBN = mat3(T, B, N);
+    //vec3 Q1  = dFdx(worldPos);
+    //vec3 Q2  = dFdy(worldPos);
+    //vec2 st1 = dFdx(texCoord);
+    //vec2 st2 = dFdy(texCoord);
+	//
+    //vec3 N   = normalize(normal);
+    //vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    //vec3 B  = -normalize(cross(N, T));
+    //mat3 TBN = mat3(T, B, N);
 
     return normalize(TBN * tangentNormal);
 }
@@ -234,7 +234,7 @@ vec2 ParallaxMapping(vec2 texCoord, vec3 viewDir){
 */
 
 
-#define ambientConst vec3(0.1f)
+#define ambientConst 0.1f
 #define specularConst 0.3f
 
 void main(){
@@ -249,6 +249,8 @@ void main(){
 		albedo = texture(albedoBuffer, texCoord).rgb;
 		shininess = texture(albedoBuffer, texCoord).a;
 		aNormal = texture(normalBuffer, texCoord).rgb;
+
+		if(aNormal == vec3(0.f)) discard; //If empty just discard
 	}
 	else{
 		aWorldPos = worldPos;
@@ -266,21 +268,21 @@ void main(){
 	viewDir = normalize(viewPos - aWorldPos);
 	
 
-	vec2 updatedTexCoord = texCoord;//ParallaxMapping(texCoord,  viewDir); //Paralax Mapping
+	//vec2 updatedTexCoord = texCoord;//ParallaxMapping(texCoord,  viewDir); //Paralax Mapping
 	//if(texCoord.x > 1.0 || texCoord.y > 1.0 || texCoord.x < 0.0 || texCoord.y < 0.0) //Paralax Mapping
 	//	discard; //Paralax Mapping
 
 	//Combine lights
 	vec3 result = vec3(0.f);
 
-	if(dirLightEnabled) result += CalcDirLight(dirLight, aNormal, updatedTexCoord, shininess, aWorldPos, albedo);
+	if(dirLightEnabled) result += CalcDirLight(dirLight, aNormal, texCoord, shininess, aWorldPos, albedo);
 
 	if(pointLightEnabled){
 		for(int i = 0; i < NR_POINT_LIGHTS; i++)
-			result += CalcPointLight(pointLights[i], aNormal, updatedTexCoord, shininess, aWorldPos, albedo);
+			result += CalcPointLight(pointLights[i], aNormal, texCoord, shininess, aWorldPos, albedo);
 	}
 	
-	if(spotLightEnabled) result += CalcSpotLight(spotLight, aNormal, updatedTexCoord, shininess, aWorldPos, albedo);
+	if(spotLightEnabled) result += CalcSpotLight(spotLight, aNormal, texCoord, shininess, aWorldPos, albedo);
 		
 	//if(texColor.a < 0.1f) discard; //Transparency
 

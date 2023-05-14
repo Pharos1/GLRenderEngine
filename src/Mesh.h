@@ -59,7 +59,6 @@ std::vector<Vertex> skyboxVerts = { //Note: those are cube verts but the faces a
         Vertex(glm::vec3(-1.f,  1.f, -1.f), glm::vec3(0.f),  glm::vec2(0.0f, 1.0f)),
     };
 
-//Todo: specular textures stay forever in the frag shader so i should learn more and maybe zero its index at the end of the draw call.
 class Mesh {
 public:
     std::vector<Vertex>       vertices;
@@ -254,8 +253,6 @@ public:
         shader.setMat4("view", glm::mat4(glm::mat3(view)));
         shader.setMat4("proj", proj);
 
-
-
         // draw mesh
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -286,7 +283,8 @@ public:
             glBindTexture(GL_TEXTURE_2D, textureIDs[i]);
         }
 
-        glDisable(GL_DEPTH_TEST);
+        //glDisable(GL_DEPTH_TEST);
+        glDepthFunc(GL_ALWAYS);
         glBindVertexArray(VAO);
 
         if (indices.size() != 0) {
@@ -300,7 +298,8 @@ public:
         glActiveTexture(GL_TEXTURE0);
 
         //Default options
-        glEnable(GL_DEPTH_TEST);
+        //glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
     }
 };
 #endif

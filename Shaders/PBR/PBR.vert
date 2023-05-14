@@ -13,16 +13,16 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 proj;
 
-uniform bool renderQuad;
+uniform bool deferredEnabled;
 
 out mat3 TBN;
 
 void main(){
 	worldPos = vec3(model * vec4(aPos, 1.f));
-	gl_Position = renderQuad ? vec4(aPos, 1.f) : proj * view * vec4(worldPos, 1.f); //Todo multiply it in the cpu as the cpu can save some processing
+	gl_Position = deferredEnabled ? vec4(aPos, 1.f) : proj * view * vec4(worldPos, 1.f); //Todo multiply it in the cpu as the cpu can save some processing
 	texCoord = aTexCoord;
 
-	mat3 normalMatrix = transpose(inverse(mat3(model))); //This is really expensive function
+	mat3 normalMatrix = transpose(inverse(mat3(model))); //Transpose is really expensive function
 	normal = normalize(normalMatrix * aNormal);
 
 	if(aTangent == vec3(0.f))
@@ -33,7 +33,7 @@ void main(){
 		T = normalize(T - dot(T, normal) * normal);
 		vec3 B = cross(normal, T);
 		
-		TBN = (mat3(T, B, normal));
+		TBN = mat3(T, B, normal);
 	}
 	
 }

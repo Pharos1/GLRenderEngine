@@ -9,10 +9,13 @@ struct DeltaTime {
 	float deltaTime = 0.0f;	// Time between current frame and last frame
 	float lastFrame = 0.0f; // Time of last frame
 
-	float getDT() {
+	void updateDT() {
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+	}
+	float getDT() {
+		updateDT();
 
 		return deltaTime;
 	}
