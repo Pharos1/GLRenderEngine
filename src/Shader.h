@@ -32,7 +32,7 @@ private:
 		}
 	}
 public:
-	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) {
+	void loadShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) {
 		std::string vertexContent;
 		std::string fragmentContent;
 		std::string geometryContent;
@@ -118,8 +118,12 @@ public:
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
 		glDeleteShader(geometry);
+	}
+	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) {
+		loadShader(vertexPath, fragmentPath, geometryPath);
 	};
 	Shader() {};
+
 	int getID() { return ID; }
 	void use() { glUseProgram(ID); };
 	void unuse() { glDeleteProgram(ID); };

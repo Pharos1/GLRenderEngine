@@ -8,9 +8,7 @@
 #include <GLM/gtc/matrix_transform.hpp>
 #include <GLM/gtc/type_ptr.hpp>
 
-
 #include "DeltaTime.h"
-//Je
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 

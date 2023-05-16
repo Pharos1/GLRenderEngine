@@ -16,15 +16,22 @@ public:
 	int result = 0;
 	int param;
 
-	Query(int type) {
+	void loadQuery(int type) {
 		this->type = type;
-		glGenQueries(1, &id);
-		
+		if(!id) glGenQueries(1, &id);
+
 		//Activate and deactivate the query as glGenQueries activates it which gives errors
 		glBeginQuery(this->type, this->id);
 		glEndQuery(this->type);
 	}
+	Query(int type) {
+		createQuery(type);
+	}
 	Query() {};
+	~Query() {
+		glDeleteQueries(1, &id);
+	}
+
 	void begin() {
 		if (!inUse) {
 			if (isResultReady())

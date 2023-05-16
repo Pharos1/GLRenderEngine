@@ -308,7 +308,7 @@ int currentSkybox = 2;
 int currentModel = 0;
 int tonemapMode = 5;
 float maxRadiance = 1.f;
-bool msaaEnabled = false;
+int antiAliasing = 2;
 
 //Scene
 Model gun;
@@ -508,6 +508,7 @@ int main(int argc, char* argv[]) {
 	initBloom();
 	initDeferredShading();
 	initPostProc();
+	initMSAA();
 
 	//PBR
 	Material::setIndices(PBRShader);
@@ -526,9 +527,9 @@ int main(int argc, char* argv[]) {
 	initImGui();
 
 	//Queries
-	guiPass = Query(GL_TIME_ELAPSED);
-	renderPass = Query(GL_TIME_ELAPSED);
-	postprocPass = Query(GL_TIME_ELAPSED);
+	guiPass.loadQuery(GL_TIME_ELAPSED);
+	renderPass.loadQuery(GL_TIME_ELAPSED);
+	postprocPass.loadQuery(GL_TIME_ELAPSED);
 
 	//Software & Hardware Info
 	openGLVersion = (char*)glGetString(GL_VERSION);
@@ -636,7 +637,7 @@ int main(int argc, char* argv[]) {
 		//shadowCube.Draw(shader);
 		*/
 
-		if (deferredShadingEnabled) {
+		if (deferredShadingEnabled && !pbrEnabled) {
 			glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			deferredShader.use();
@@ -659,7 +660,7 @@ int main(int argc, char* argv[]) {
 		}
 		else {
 			//Begin MSAA
-			if (msaaEnabled) {
+			if (antiAliasing == 1) {
 				glBindFramebuffer(GL_FRAMEBUFFER, msaaFBO);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			}
@@ -678,7 +679,7 @@ int main(int argc, char* argv[]) {
 		PBRSkybox.Draw(hdrSkyboxShader);
 		glDepthFunc(GL_LESS);
 
-		if (!deferredShadingEnabled && msaaEnabled) { //MSAA doesn't work with MSAA and post proc works differently with MSAA
+		if (!deferredShadingEnabled && antiAliasing == 1) { //MSAA doesn't work with MSAA and post proc works differently with MSAA
 			//End MSAA
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, msaaFBO);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
@@ -843,7 +844,6 @@ void initPostProc() {
 	glGenFramebuffers(1, &postprocFBO);
 	glGenTextures(1, &postprocColorBuffer);
 	glGenRenderbuffers(1, &postprocRBO);
-	initMSAA();
 	setupPostProc();
 }
 void setupPostProc() {
@@ -860,9 +860,6 @@ void setupPostProc() {
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, postprocRBO);
 	
-	//MSAA
-	setupMSAA();
-	
 	//Check for errors
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "Framebuffer not complete!" << std::endl;
@@ -876,6 +873,10 @@ void setupPostProc() {
 	postprocShader.set1f("gamma", gamma);
 	postprocShader.set1f("maxRadiance", maxRadiance);
 	postprocShader.set1i("tonemapMode", tonemapMode);
+
+	//FXAA
+	postprocShader.set1b("fxaaEnabled", antiAliasing == 2);
+	postprocShader.setVec2("inverseScreenSize", glm::vec2(1.f / SCR_WIDTH, 1.f / SCR_HEIGHT));
 
 	//SRGB
 	PBRShader.use();
@@ -897,13 +898,13 @@ void setupMSAA() {
 
 	//Multisampled texture
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msaaColorBuffer);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaaSampleCount, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msaaColorBuffer, 0);
 	
 	//Multisampled RBO
 	glBindRenderbuffer(GL_RENDERBUFFER, msaaRBO);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaaSampleCount, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, msaaRBO);
 
@@ -982,15 +983,15 @@ void setupPBR() {
 	PBRSkybox = ClassicMesh(skyboxVerts);
 
 	if (currentSkybox == 0)
-		hdrTexture = HDRMap("Images/abandoned_tiled_room_2k.hdr");
+		hdrTexture.loadHDRMap("Images/abandoned_tiled_room_2k.hdr");
 	if (currentSkybox == 1)
-		hdrTexture = HDRMap("Images/abandoned_tiled_room_4k.hdr");
+		hdrTexture.loadHDRMap("Images/abandoned_tiled_room_4k.hdr");
 	if (currentSkybox == 2)
-		hdrTexture = HDRMap("Images/HDR_029_Sky_Cloudy_Ref.hdr");
+		hdrTexture.loadHDRMap("Images/HDR_029_Sky_Cloudy_Ref.hdr");
 	if (currentSkybox == 3)
-		hdrTexture = HDRMap("Images/thatch_chapel_2k.hdr");
+		hdrTexture.loadHDRMap("Images/thatch_chapel_2k.hdr");
 	if (currentSkybox == 4)
-		hdrTexture = HDRMap("Images/thatch_chapel_4k.hdr");
+		hdrTexture.loadHDRMap("Images/thatch_chapel_4k.hdr");
 
 	//Set uniforms
 	PBRShader.use();
@@ -1120,8 +1121,8 @@ void loadModels() {
 	gun.loadModel("Objects/Cerberus_by_Andrew_Maximov/Cerberus_LP.FBX");
 	gun.meshes[0].material.loadTextures("Objects/Cerberus_by_Andrew_Maximov/Textures/Cerberus_A.tga", "Objects/Cerberus_by_Andrew_Maximov/Textures/Cerberus_N.tga", "Objects/Cerberus_by_Andrew_Maximov/Textures/Cerberus_M.tga", "Objects/Cerberus_by_Andrew_Maximov/Textures/Cerberus_R.tga", "Objects/Cerberus_by_Andrew_Maximov/Textures/Raw/Cerberus_AO.tga");
 
-	//suzanne.loadModel("Objects/suzanne/scene.gltf");
-	//suzanne.meshes[0].material.loadTextures("Images/White.png", "", "", "Images/White.png", "Images/White.png");
+	suzanne.loadModel("Objects/suzanne/scene.gltf");
+	suzanne.meshes[0].material.loadTextures("Images/White.png", "", "", "Images/White.png", "Images/White.png");
 	//
 	//backpack.loadModel("Objects/SurvivalBackpack/Survival_BackPack_2.fbx");
 	//backpack.meshes[0].material.loadTextures("Objects/SurvivalBackpack/albedo.jpg", "Objects/SurvivalBackpack/normal.png", "Objects/SurvivalBackpack/metallic.jpg", "Objects/SurvivalBackpack/roughness.jpg", "Objects/SurvivalBackpack/AO.jpg");
@@ -1271,7 +1272,7 @@ void updateImGui() {
 			style.Colors[ImGuiCol_HeaderActive].w = 0.0f;
 
 			//Dir Light
-			nodeOpened = TreeNodeEx("Dir Light", ImGuiTreeNodeFlags_OpenOnArrow);
+			nodeOpened = TreeNodeEx("Dir Light");
 
 			SameLine();
 			if (Checkbox("##0", &dirLightEnabled)) {
@@ -1303,7 +1304,7 @@ void updateImGui() {
 
 
 			//Point Light
-			nodeOpened = TreeNodeEx("Point Light", ImGuiTreeNodeFlags_OpenOnArrow);
+			nodeOpened = TreeNodeEx("Point Light");
 			SameLine();
 			if (Checkbox("##1", &pointLightEnabled)) {
 				shader.use();
@@ -1335,7 +1336,7 @@ void updateImGui() {
 
 
 			//Spot Light
-			nodeOpened = TreeNodeEx("Spot Light", ImGuiTreeNodeFlags_OpenOnArrow);
+			nodeOpened = TreeNodeEx("Spot Light");
 			SameLine();
 			if (Checkbox("##2", &spotLightEnabled)) {
 				shader.use();
@@ -1493,23 +1494,23 @@ void updateImGui() {
 		}
 		if (TreeNode("Skybox")) {
 			if (RadioButton("Abandoned Room 2K", &currentSkybox, 0)) {
-				hdrTexture = HDRMap("Images/abandoned_tiled_room_2k.hdr");
+				hdrTexture.loadTexture("Images/abandoned_tiled_room_2k.hdr");
 				updateIBL();
 			}
 			if (RadioButton("Abandoned Room 4K", &currentSkybox, 1)) {
-				hdrTexture = HDRMap("Images/abandoned_tiled_room_4k.hdr");
+				hdrTexture.loadTexture("Images/abandoned_tiled_room_4k.hdr");
 				updateIBL();
 			}
 			if (RadioButton("Grass Field", &currentSkybox, 2)) {
-				hdrTexture = HDRMap("Images/HDR_029_Sky_Cloudy_Ref.hdr");
+				hdrTexture.loadTexture("Images/HDR_029_Sky_Cloudy_Ref.hdr");
 				updateIBL();
 			}
 			if (RadioButton("Thatch Chapel 2K", &currentSkybox, 3)) {
-				hdrTexture = HDRMap("Images/thatch_chapel_2k.hdr");
+				hdrTexture.loadTexture("Images/thatch_chapel_2k.hdr");
 				updateIBL();
 			}
 			if (RadioButton("Thatch Chapel 4K", &currentSkybox, 4)) {
-				hdrTexture = HDRMap("Images/thatch_chapel_4k.hdr");
+				hdrTexture.loadTexture("Images/thatch_chapel_4k.hdr");
 				updateIBL();
 			}
 
@@ -1523,8 +1524,24 @@ void updateImGui() {
 				shader.use();
 				shader.set1b("transformSRGB", transformSRGB);
 			}
-			Checkbox("Enable MSAA", &msaaEnabled);
+			NewLine();
 
+			Text("Anti-Aliasing");
+			if (RadioButton("Off", &antiAliasing, 0) ||
+				RadioButton("MSAA", &antiAliasing, 1)) {
+				postprocShader.use();
+				postprocShader.set1b("fxaaEnabled", false);
+			}
+			if(RadioButton("FXAA", &antiAliasing, 2)) {
+				postprocShader.use();
+				postprocShader.set1b("fxaaEnabled", true);
+			}
+			
+			BeginDisabled(antiAliasing != 1);
+			if (SliderInt("MSAA Sample Count", &msaaSampleCount, 1, 8))
+				setupMSAA();
+			EndDisabled();
+			
 			NewLine();
 
 			if (TreeNode("Tonemapping")) {
@@ -1790,6 +1807,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	setupBloom();
 	setupPostProc();
 	setupDeferredShading();
+	setupMSAA();
 }
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 	if (mouseLocked)

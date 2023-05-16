@@ -24,15 +24,12 @@ public:
 
 	std::string type;
 	std::string path = "";
-	std::string fileName = "";
 
-	GLuint id;
-
-	bool initialized = false;
+	GLuint id = 0;
 
 	GLuint getID() const { return this->id; }
 	void bind(const GLint texture_unit) {
-		if (!initialized) {
+		if (!id) {
 			std::cout << "ERROR::TEXTURE.H::TEXTURE NOT INITIALIZED" << std::endl;
 			return;
 		}
@@ -47,23 +44,21 @@ public:
 	void deleteTexture() {
 		glDeleteTextures(1, &this->id);
 	}
-
-	Texture(std::string path, bool invertY = false, std::string type = "texture_diffuse", GLenum glType = GL_TEXTURE_2D) {
-		initialized = true;
-
+	void loadTexture(std::string path, bool invertY = false, std::string type = "texture_diffuse", GLenum glType = GL_TEXTURE_2D) {
 		//Note: glGenTexture generates n number of texture ids and sends them to the second parameter
 		//Note: glActiveTexture sets the texture unit that glBindTexture will bind to(starting from 0)
 		//Note: glBindTexture sets the texture id(sec parameter) to the texture unit(from glActiveTexture) if glActive texture wasn't called before it is bind to GL_TEXTURE0 
+		if (path == "") return;
 
 		this->path = path;
-		this->fileName = path.substr(path.find_last_of('/') + 1); //Sometimes \ is used instead of / so this could not be that reliable
 		this->type = type;
 		this->glType = glType;
-		
-		if(invertY) this->id = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGBA, 0, SOIL_FLAG_INVERT_Y);
-		else this->id = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGBA, 0, 0);
 
-		if (id) {
+		if (!this->id) glGenTextures(1, &id);
+		std::cout << id << std::endl;
+		this->id = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGBA, this->id, invertY ? SOIL_FLAG_INVERT_Y : 0);
+
+		if (this->id) {
 			glTexParameteri(glType, GL_TEXTURE_WRAP_S, GL_REPEAT); //Note: When using transparency its good to use GL_CLAMP_TO_EDGE instead of GL_REPEAT to prevent interpolation of colors on the top of the texture
 			glTexParameteri(glType, GL_TEXTURE_WRAP_T, GL_REPEAT); //and here also
 			glTexParameteri(glType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -77,14 +72,22 @@ public:
 		glActiveTexture(GL_TEXTURE0); //Unbind
 		glBindTexture(glType, 0);
 	}
+
+	Texture(std::string path, bool invertY = false, std::string type = "texture_diffuse", GLenum glType = GL_TEXTURE_2D) {
+		loadTexture(path, invertY, type, glType);
+	}
 	Texture() {};
+	~Texture() {
+		if (!id) return;
+
+		std::cout << "TEXTURE::DELETED::PATH: " << this->path << " :ID'" << this->id << "'" << std::endl;
+		this->deleteTexture();
+	}
 };
 class CubemapTexture : public Texture {
 public:
 	CubemapTexture(std::vector<std::string> faces) {
-		initialized = true;
-
-		glGenTextures(1, &this->id);
+		if(!this->id) glGenTextures(1, &this->id);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, this->id);
 
 		for (unsigned int i = 0; i < faces.size(); i++) {
@@ -93,12 +96,11 @@ public:
 				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
 					0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
 				);
-				stbi_image_free(data);
 			}
 			else {
-				std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
-				stbi_image_free(data);
+				std::cout << "ERROR::TEXTURE.H::CUBEMAP FACE FAILED TO LOAD: " << faces[i] << std::endl;
 			}
+			stbi_image_free(data);
 		}
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -111,27 +113,30 @@ public:
 };
 class HDRMap : public Texture{
 public:
-	HDRMap(std::string path, GLuint glType = GL_TEXTURE_2D) {
-		initialized = true;
+	void loadHDRMap(std::string path, GLuint glType = GL_TEXTURE_2D) {
 		stbi_set_flip_vertically_on_load(true);
 
 		this->glType = glType;
 
+		if(!id) glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_2D, id);
+
 		float* data = stbi_loadf(path.c_str(), &width, &height, &nrChannels, 0);
-		if (data){
-			glGenTextures(1, &id);
-			glBindTexture(GL_TEXTURE_2D, id);
+		if (data) {
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
-		
+
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
+
 			stbi_image_free(data);
 		}
 		else
 			std::cout << "Failed to load HDR image." << std::endl;
+	}
+	HDRMap(std::string path, GLuint glType = GL_TEXTURE_2D) {
+		loadHDRMap(path, glType);
 	}
 	HDRMap() {};
 };

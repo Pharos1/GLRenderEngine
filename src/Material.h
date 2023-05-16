@@ -41,27 +41,27 @@ public:
 			return;
 		}
 
-		if (albedo.initialized) albedo.bind(0); //If it was loaded then you can bind it
-		if (normal.initialized) normal.bind(1);
-		if (metallic.initialized) metallic.bind(2);
-		if (roughness.initialized) roughness.bind(3);
-		if (AO.initialized) AO.bind(4);
+		albedo.bind(0); //If it was loaded then you can bind it
+		normal.bind(1);
+		metallic.bind(2);
+		roughness.bind(3);
+		AO.bind(4);
 
 		shader.set1f("material.shininess", shininess);
 	}
 	void unbind() {
-		if (albedo.initialized) albedo.unbind(0); //If it was loaded then you can bind it
-		if (normal.initialized) normal.unbind(1);
-		if (metallic.initialized) metallic.unbind(2);
-		if (roughness.initialized) roughness.unbind(3);
-		if (AO.initialized) AO.unbind(4);
+		albedo.unbind(0); //If it was loaded then you can bind it
+		normal.unbind(1);
+		metallic.unbind(2);
+		roughness.unbind(3);
+		AO.unbind(4);
 	}
 	void loadTextures(std::string albedo = "", std::string normal = "", std::string metallic = "", std::string roughness = "", std::string AO = "") {
-		if (albedo != "") this->albedo = Texture(albedo);
-		if (normal != "") this->normal = Texture(normal);
-		if (metallic != "") this->metallic = Texture(metallic);
-		if (roughness != "") this->roughness = Texture(roughness);
-		if (AO != "") this->AO = Texture(AO);
+		this->albedo.loadTexture(albedo);
+		this->normal.loadTexture(normal);
+		this->metallic.loadTexture(metallic);
+		this->roughness.loadTexture(roughness);
+		this->AO.loadTexture(AO);
 
 		this->initialized = true;
 	}
