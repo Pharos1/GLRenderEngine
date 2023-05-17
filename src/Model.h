@@ -116,6 +116,7 @@ public:
 
 		MaterialMesh finalMesh(vertices, indices);
 
+		std::cout << scene->HasMaterials() << std::endl;
 		if (scene->HasMaterials()) {
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 

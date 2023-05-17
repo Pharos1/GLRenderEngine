@@ -25,7 +25,7 @@ public:
 		glEndQuery(this->type);
 	}
 	Query(int type) {
-		createQuery(type);
+		loadQuery(type);
 	}
 	Query() {};
 	~Query() {

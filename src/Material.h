@@ -41,7 +41,7 @@ public:
 			return;
 		}
 
-		albedo.bind(0); //If it was loaded then you can bind it
+		albedo.bind(0);
 		normal.bind(1);
 		metallic.bind(2);
 		roughness.bind(3);

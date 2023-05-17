@@ -2,18 +2,14 @@
 #ifndef TEXTURE
 #define TEXTURE
 
-
 #include<iostream>
 #include<string>
 #include<vector>
 
-//#include<GLAD/glad.h>
 #include <GLAD/gl.h>
 #include <GLFW/glfw3.h>
 #include <SOIL2/stb_image.h>
 #include <SOIL2/SOIL2.h>
-
-//Todo: maybe make a framebuffer class and make cubemap class and make other classes that inherit from the Texture class and probably shadowMap and rbo
 
 class Texture {
 public:
@@ -22,43 +18,42 @@ public:
 	GLuint glType;
 	int nrChannels;
 
-	std::string type;
 	std::string path = "";
 
 	GLuint id = 0;
 
 	GLuint getID() const { return this->id; }
 	void bind(const GLint texture_unit) {
-		if (!id) {
-			std::cout << "ERROR::TEXTURE.H::TEXTURE NOT INITIALIZED" << std::endl;
-			return;
-		}
+		if (!this->id) return;
 
 		glActiveTexture(GL_TEXTURE0 + texture_unit);
 		glBindTexture(this->glType, this->id);
 	}
 	void unbind(const GLint texture_unit) {
+		if (!this->id) return;
+
 		glActiveTexture(GL_TEXTURE0 + texture_unit);
 		glBindTexture(this->glType, 0);
 	}
 	void deleteTexture() {
 		glDeleteTextures(1, &this->id);
 	}
-	void loadTexture(std::string path, bool invertY = false, std::string type = "texture_diffuse", GLenum glType = GL_TEXTURE_2D) {
+	void loadTexture(std::string path, bool invertY = false, GLenum glType = GL_TEXTURE_2D) {
 		//Note: glGenTexture generates n number of texture ids and sends them to the second parameter
 		//Note: glActiveTexture sets the texture unit that glBindTexture will bind to(starting from 0)
 		//Note: glBindTexture sets the texture id(sec parameter) to the texture unit(from glActiveTexture) if glActive texture wasn't called before it is bind to GL_TEXTURE0 
-		if (path == "") return;
+		if (path == "") {
+			return;
+		}
 
 		this->path = path;
-		this->type = type;
 		this->glType = glType;
 
 		if (!this->id) glGenTextures(1, &id);
-		std::cout << id << std::endl;
-		this->id = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGBA, this->id, invertY ? SOIL_FLAG_INVERT_Y : 0);
 
-		if (this->id) {
+		bool data = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGBA, this->id, invertY ? SOIL_FLAG_INVERT_Y : 0);
+
+		if (data) {
 			glTexParameteri(glType, GL_TEXTURE_WRAP_S, GL_REPEAT); //Note: When using transparency its good to use GL_CLAMP_TO_EDGE instead of GL_REPEAT to prevent interpolation of colors on the top of the texture
 			glTexParameteri(glType, GL_TEXTURE_WRAP_T, GL_REPEAT); //and here also
 			glTexParameteri(glType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -73,21 +68,21 @@ public:
 		glBindTexture(glType, 0);
 	}
 
-	Texture(std::string path, bool invertY = false, std::string type = "texture_diffuse", GLenum glType = GL_TEXTURE_2D) {
-		loadTexture(path, invertY, type, glType);
+	Texture(std::string path, bool invertY = false, GLenum glType = GL_TEXTURE_2D) {
+		loadTexture(path, invertY, glType);
 	}
 	Texture() {};
 	~Texture() {
 		if (!id) return;
 
-		std::cout << "TEXTURE::DELETED::PATH: " << this->path << " :ID'" << this->id << "'" << std::endl;
+		std::cout << "TEXTURE::DELETED::PATH: " << this->path << ", ID: " << this->id << std::endl;
 		this->deleteTexture();
 	}
 };
 class CubemapTexture : public Texture {
 public:
-	CubemapTexture(std::vector<std::string> faces) {
-		if(!this->id) glGenTextures(1, &this->id);
+	void loadCubemap(std::vector<std::string> faces) {
+		if (!this->id) glGenTextures(1, &this->id);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, this->id);
 
 		for (unsigned int i = 0; i < faces.size(); i++) {
@@ -108,6 +103,9 @@ public:
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	}
+	CubemapTexture(std::vector<std::string> faces) {
+		loadCubemap(faces);
 	}
 	CubemapTexture() {};
 };

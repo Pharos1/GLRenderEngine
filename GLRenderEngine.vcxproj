@@ -180,6 +180,8 @@
     <None Include="Shaders\bloom.frag" />
     <None Include="Shaders\blur.frag" />
     <None Include="Shaders\cubemap.vert" />
+    <None Include="Shaders\lightBox.frag" />
+    <None Include="Shaders\lightBox.vert" />
     <None Include="Shaders\PBR\brdfShader.frag" />
     <None Include="Shaders\PBR\brdfShader.vert" />
     <None Include="Shaders\Shadow\cubemapShadow.frag" />

@@ -231,7 +231,7 @@ public:
     Skybox(std::vector<std::string> textureFaces) {
         this->vertices = skyboxVerts;
 
-        texture = CubemapTexture(textureFaces);
+        texture.loadCubemap(textureFaces);
 
         setupMesh();
     }

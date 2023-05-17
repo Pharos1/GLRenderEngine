@@ -70,7 +70,7 @@ uniform bool spotLightEnabled;
 
 //Deferred
 uniform bool deferredEnabled;
-uniform int deferredState;
+uniform int deferredState = 4;
 
 uniform sampler2D positionBuffer;
 uniform sampler2D normalBuffer;
@@ -250,7 +250,7 @@ void main(){
 		shininess = texture(albedoBuffer, texCoord).a;
 		aNormal = texture(normalBuffer, texCoord).rgb;
 
-		if(aNormal == vec3(0.f)) discard; //If empty just discard
+		if(aNormal == vec3(0.f)) discard; //If empty just discard the pixel
 	}
 	else{
 		aWorldPos = worldPos;
@@ -283,7 +283,7 @@ void main(){
 	}
 	
 	if(spotLightEnabled) result += CalcSpotLight(spotLight, aNormal, texCoord, shininess, aWorldPos, albedo);
-		
+	
 	//if(texColor.a < 0.1f) discard; //Transparency
 
 	FragColor = vec4(result, 1.f);
@@ -404,7 +404,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec2 texCoord, float shinines
 
 	//Attenuation
 	float distance = length(light.position - fragPos);
-	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+	float attenuation = 1.0 / (distance * distance);//(light.constant + light.linear * distance + light.quadratic * (distance * distance));
 	
 	//Specular lighting
 	specular *= specularConst/*light.specular*/ * spec(lightDir, normal);
@@ -432,7 +432,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec2 texCoord, float shininess,
 
 	//Attenuation
 	float distance = length(light.position - fragPos);
-	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+	float attenuation = 1.0 / (distance * distance);//(light.constant + light.linear * distance + light.quadratic * (distance * distance));    
 	
 	//Spotlight range
 	float theta = dot(lightDir, normalize(-light.direction)); 

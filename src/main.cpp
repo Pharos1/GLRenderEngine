@@ -105,7 +105,6 @@ void setupDeferredShading();
 void setupPBR();
 void initImGui();
 void loadModels();
-void setupMainLoop();
 
 //Update
 void updateImGui();
@@ -121,18 +120,16 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 //Every Frame
+void setupMainLoop();
 void renderScene(Shader& shader, Shader& PBRShader);
 void processInput(GLFWwindow* window);
 void beginPostProcess();
 void endPostProcess();
-void beginMSAA();
-void endMSAA();
-
 
 //Window & projection
 GLFWwindow* window;
-unsigned int SCR_WIDTH = 1280;
-unsigned int SCR_HEIGHT = 720;
+unsigned int SCR_WIDTH = 1920; //1280
+unsigned int SCR_HEIGHT = 1080; //720
 
 float fov = 45.f;
 glm::mat4 model(1.f);
@@ -141,7 +138,7 @@ glm::mat4 proj(1.f);
 
 RenderQuad renderQuad;
 
-Camera cam(glm::vec3(0.f, 1.f, 3.f), 7.5f);
+Camera cam(glm::vec3(0.f, 0.5f, 3.f), 7.5f);
 bool mouseLocked = true;
 
 std::string openGLVersion;
@@ -162,6 +159,7 @@ Shader hdrSkyboxShader;
 Shader irradianceShader;
 Shader prefilterShader;
 Shader brdfShader;
+Shader lightBoxShader;
 
 //Primitives
 std::vector<Vertex> cubeVertices = { // positions          // texture Coords
@@ -258,10 +256,6 @@ DirLight dirLight(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(1.f), 1.f);//(glm::vec3
 PointLight pointLight(glm::vec3(0.f, .5f, 3.f), glm::vec3(1.f), 1.f);//(glm::vec3(0.f, .5f, 3.f), glm::vec3(.05f), glm::vec3(1.f), glm::vec3(.3f), 1.f, .014f, .000007f);
 SpotLight spotLight(cam.getPos(), cam.camFront, glm::vec3(1.f), 1.f, 12.5f, 15.f);//(cam.getPos(), cam.camFront, glm::vec3(0.f), glm::vec3(1.f), glm::vec3(.3f), 1.f, .09f, .032f, 12.5f, 15.f);
 
-//Deferred Shading
-bool deferredShadingEnabled = false;
-int deferredState = 4;
-
 //Deferred shading
 unsigned int gBuffer;
 unsigned int gPosition, gNormal, gAlbedoSpec;
@@ -304,11 +298,24 @@ bool useNormalMap = true;
 bool useMetallic = true;
 bool useRoughness = true;
 bool useAmbientMap = true;
-int currentSkybox = 2;
+int currentSkybox = 1;
 int currentModel = 0;
 int tonemapMode = 5;
 float maxRadiance = 1.f;
-int antiAliasing = 2;
+int antiAliasing = 0;
+bool deferredShadingEnabled = false;
+int deferredState = 4;
+
+//FXAA
+#define DEFAULT_EDGE_THRESHOLD_MIN .0312f;
+#define DEFAULT_EDGE_THRESHOLD_MAX .125f;
+#define DEFAULT_ITERATIONS 12;
+#define DEFAULT_SUBPIXEL_QUALITY .25f;
+bool fxaaRevert = false;
+float EDGE_THRESHOLD_MIN = .0312f;
+float EDGE_THRESHOLD_MAX = .125f;
+int ITERATIONS = 12;
+float SUBPIXEL_QUALITY = .25f;
 
 //Scene
 Model gun;
@@ -326,16 +333,25 @@ glm::vec3 objectPos(0.f);
 glm::vec3 objectScale(1.f);
 glm::vec3 objectRot(0.f);
 
-glm::mat4 modelMat(1.f);
-glm::mat4 objectMat(1.f);
+glm::mat4 modelScaleMat(1.f);
+glm::mat4 modelTransMat(1.f);
+glm::mat4 modelRotMat(1.f);
+glm::mat4 modelRotScaleMat(1.f);
+glm::mat4 objectScaleMat(1.f);
+glm::mat4 objectTransMat(1.f);
+glm::mat4 objectRotMat(1.f);
 
 glm::mat4 objectDemoRot(1.f);
+
 float demoRotSpeed = .75f;
 
 //Query
 Query guiPass;
 Query renderPass;
 Query postprocPass;
+
+//Light box
+ClassicMesh lightBox;
 
 int main(int argc, char* argv[]) {
 	//Change the current path (in case the file is run outside the IDE). Also this should be changed if i would release a seperate built .exe file
@@ -357,6 +373,7 @@ int main(int argc, char* argv[]) {
 	irradianceShader = Shader("Shaders/cubemap.vert", "Shaders/PBR/irradianceConvolution.frag");
 	prefilterShader = Shader("Shaders/cubemap.vert", "Shaders/PBR/prefilter.frag");
 	brdfShader = Shader("Shaders/PBR/brdfShader.vert", "Shaders/PBR/brdfShader.frag");
+	lightBoxShader = Shader("Shaders/lightBox.vert", "Shaders/lightBox.frag");
 
 	debugQuadShader.use();
 	debugQuadShader.set1i("image", 0);
@@ -537,6 +554,9 @@ int main(int argc, char* argv[]) {
 	vendor = (char*)glGetString(GL_VENDOR);
 	gpuVersion = (char*)glGetString(GL_RENDERER);
 
+	//Light box
+	lightBox = ClassicMesh(cubeVertices);
+
 
 	while (!glfwWindowShouldClose(window)) {
 		//glCheckError();
@@ -637,16 +657,20 @@ int main(int argc, char* argv[]) {
 		//shadowCube.Draw(shader);
 		*/
 
-		if (deferredShadingEnabled && !pbrEnabled) {
+		lightBoxShader.use();
+		lightBoxShader.setMat4("PVMat", proj * view);
+		lightBoxShader.setVec3("pos", pointLight.pos);
+		lightBoxShader.setVec3("diffuse", pointLight.diffuse);
+
+		if (deferredShadingEnabled) {
+			deferredShader.use();
 			glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			deferredShader.use();
 		
 			deferredShader.setMat4("proj", proj);
-			deferredShader.setMat4("view", view);
-			deferredShader.setMat4("model", objectDemoRot * modelMat);
-		
-			renderScene(deferredShader, deferredShader);
+
+			deferredShader.use();
+			modelPtr->Draw(deferredShader);
 		
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -654,9 +678,14 @@ int main(int argc, char* argv[]) {
 
 			shader.use();
 			shader.set1b("deferredEnabled", true);
-			renderQuad.Draw(shader, { gPosition, gNormal, gAlbedoSpec });
+			glActiveTexture(GL_TEXTURE5);
+			glBindTexture(GL_TEXTURE_2D, gPosition);
+			glActiveTexture(GL_TEXTURE6);
+			glBindTexture(GL_TEXTURE_2D, gNormal);
+			glActiveTexture(GL_TEXTURE7);
+			glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+			renderQuad.Draw(shader, {});
 			shader.set1b("deferredEnabled", false);
-
 		}
 		else {
 			//Begin MSAA
@@ -670,6 +699,9 @@ int main(int argc, char* argv[]) {
 			renderScene(shader, PBRShader);
 		}
 
+		if (pointLightEnabled)
+			lightBox.Draw(lightBoxShader);
+
 		//PBR Skybox
 		glDepthFunc(GL_LEQUAL);
 		hdrSkyboxShader.use();
@@ -679,7 +711,7 @@ int main(int argc, char* argv[]) {
 		PBRSkybox.Draw(hdrSkyboxShader);
 		glDepthFunc(GL_LESS);
 
-		if (!deferredShadingEnabled && antiAliasing == 1) { //MSAA doesn't work with MSAA and post proc works differently with MSAA
+		if ((!deferredShadingEnabled || pbrEnabled) && antiAliasing == 1) { //MSAA doesn't work with deferred rendering
 			//End MSAA
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, msaaFBO);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
@@ -722,7 +754,7 @@ int initGLFWandGLAD() {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "GLRenderEngine", NULL, NULL); //Change the first null to glfwGetPrimaryMonitor() for fullscreen
+	window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "GLRenderEngine", glfwGetPrimaryMonitor(), NULL); //Change the first null to glfwGetPrimaryMonitor() for fullscreen
 
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -877,6 +909,10 @@ void setupPostProc() {
 	//FXAA
 	postprocShader.set1b("fxaaEnabled", antiAliasing == 2);
 	postprocShader.setVec2("inverseScreenSize", glm::vec2(1.f / SCR_WIDTH, 1.f / SCR_HEIGHT));
+	postprocShader.set1f("EDGE_THRESHOLD_MIN", EDGE_THRESHOLD_MIN);
+	postprocShader.set1f("EDGE_THRESHOLD_MAX", EDGE_THRESHOLD_MAX);
+	postprocShader.set1i("ITERATIONS", ITERATIONS);
+	postprocShader.set1f("SUBPIXEL_QUALITY", SUBPIXEL_QUALITY);
 
 	//SRGB
 	PBRShader.use();
@@ -971,9 +1007,10 @@ void setupDeferredShading() {
 
 	shader.use();
 	shader.set1i("deferredState", deferredState);
-	shader.set1i("positionBuffer", 0);
-	shader.set1i("normalBuffer", 1);
-	shader.set1i("albedoBuffer", 2);
+	shader.set1i("positionBuffer", 5);
+	shader.set1i("normalBuffer", 6);
+	shader.set1i("albedoBuffer", 7);
+	shader.set1b("deferredEnabled", false);
 
 }
 void setupPBR() {
@@ -998,8 +1035,8 @@ void setupPBR() {
 	PBRShader.setMat4("proj", proj);
 	PBRShader.setMat4("model", glm::mat4(1.f));
 
-	pointLight.set(PBRShader, "pointLights[0]");
 	dirLight.set(PBRShader, "dirLight");
+	pointLight.set(PBRShader, "pointLights[0]");
 	spotLight.set(PBRShader, "spotLight");
 
 	PBRShader.set1b("pointLightEnabled", pointLightEnabled);
@@ -1101,7 +1138,7 @@ void setupPBR() {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	// then before rendering, configure the viewport to the original framebuffer's screen dimensions
+	//Revert the viewport
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 }
 void initImGui() {
@@ -1123,35 +1160,9 @@ void loadModels() {
 
 	suzanne.loadModel("Objects/suzanne/scene.gltf");
 	suzanne.meshes[0].material.loadTextures("Images/White.png", "", "", "Images/White.png", "Images/White.png");
-	//
-	//backpack.loadModel("Objects/SurvivalBackpack/Survival_BackPack_2.fbx");
-	//backpack.meshes[0].material.loadTextures("Objects/SurvivalBackpack/albedo.jpg", "Objects/SurvivalBackpack/normal.png", "Objects/SurvivalBackpack/metallic.jpg", "Objects/SurvivalBackpack/roughness.jpg", "Objects/SurvivalBackpack/AO.jpg");
-}
-void setupMainLoop() {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-
-	dt.updateDT();
-
-	processInput(window);
-	if (mouseLocked)
-		cam.processInput(window);
-
-	//Setup IMGUI
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	NewFrame();
-
-	io = GetIO();
-
-	cam.updateView();
-	view = cam.getView();
-
-	if (demoRotation) objectDemoRot = glm::rotate(objectDemoRot, demoRotSpeed * dt.deltaTime, glm::vec3(0.f, 1.f, 0.f));
-	updateUniforms(shader);
-	updateUniforms(PBRShader);
-	updateUniforms(deferredShader);
+	
+	backpack.loadModel("Objects/SurvivalBackpack/Survival_BackPack_2.fbx");
+	backpack.meshes[0].material.loadTextures("Objects/SurvivalBackpack/albedo.jpg", "Objects/SurvivalBackpack/normal.png", "Objects/SurvivalBackpack/metallic.jpg", "Objects/SurvivalBackpack/roughness.jpg", "Objects/SurvivalBackpack/AO.jpg");
 }
 
 //Update
@@ -1172,12 +1183,11 @@ void updateImGui() {
 			SliderFloat("Speed", &demoRotSpeed, 0.f, 10.f);
 			NewLine();
 
-			if (SliderFloat3("Position", glm::value_ptr(objectPos), -10.f, 10.f) ||
-				SliderFloat3("Scale", glm::value_ptr(objectScale), 0.f, 1.f) ||
-				SliderFloat3("Rotation", glm::value_ptr(objectRot), 0.f, 360.f)) {
-
+			bool updatePos = SliderFloat3("Position", glm::value_ptr(objectPos), -10.f, 10.f);
+			bool updateScale = SliderFloat3("Scale", glm::value_ptr(objectScale), 0.f, 1.f);
+			bool updateRot = SliderFloat3("Rotation", glm::value_ptr(objectRot), 0.f, 360.f);
+			if (updatePos || updateScale || updateRot)
 				updateObjectMatrices();
-			}
 			NewLine();
 
 			if (TreeNode("Material")) {
@@ -1208,181 +1218,14 @@ void updateImGui() {
 					updateCurrentModel();
 				
 				NewLine();
-				if (SliderFloat3("Local Position", glm::value_ptr(modelPos), -10.f, 10.f) ||
-					SliderFloat3("Local Scale", glm::value_ptr(modelScale), 0.f, 1.f) ||
-					SliderFloat3("Local Rotation", glm::value_ptr(modelRot), 0.f, 360.f)) {
-
+				bool updatePos = SliderFloat3("Local Position", glm::value_ptr(modelPos), -10.f, 10.f);
+				bool updateScale = SliderFloat3("Local Scale", glm::value_ptr(modelScale), 0.f, 1.f);
+				bool updateRot = SliderFloat3("Local Rotation", glm::value_ptr(modelRot), 0.f, 360.f);
+				if (updatePos || updateScale || updateRot)
 					updateModelMatrices();
-				}
 				TreePop();
 			}
 
-			TreePop();
-		}
-		if (TreeNode("Lights")) {
-			/*
-			bool changed;
-			Text("Directional Light");
-			if (Checkbox("Enable Light##0", &dirLightEnabled)) shader.set1b("dirLightEnabled", dirLightEnabled);
-			BeginDisabled(!dirLightEnabled);
-			if (ColorEdit3("Ambient##0", glm::value_ptr(dirLight.ambient))) changed = true;
-			if (ColorEdit3("Diffuse##0", glm::value_ptr(dirLight.diffuse))) changed = true;
-			if (ColorEdit3("Specular##0", glm::value_ptr(dirLight.specular))) changed = true;
-			if (SliderFloat3("Dir", glm::value_ptr(dirLight.dir), -1, 1)) changed = true;
-			if (changed) {
-				shader.use();
-				dirLight.set(shader, "dirLight");
-				changed = false;
-			}
-			EndDisabled();
-
-			Text("Point Light");
-			if (Checkbox("Enable Light##1", &pointLightEnabled)) shader.set1b("pointLightEnabled", pointLightEnabled);
-			BeginDisabled(!pointLightEnabled);
-			if (ColorEdit3("Ambient##1", glm::value_ptr(pointLight.ambient)))  changed = true;
-			if (ColorEdit3("Diffuse##1", glm::value_ptr(pointLight.diffuse)))  changed = true;
-			if (ColorEdit3("Specular##1", glm::value_ptr(pointLight.specular)))  changed = true;
-			if (SliderFloat3("Pos##3", glm::value_ptr(pointLight.pos), -10, 10)) changed = true;
-			if (changed) {
-				shader.use();
-				pointLight.set(shader, "pointLights[0]");
-				changed = false;
-			}
-			EndDisabled();
-
-			Text("Spot Light");
-			if (Checkbox("Enable Light##2", &spotLightEnabled)) shader.set1b("spotLightEnabled", spotLightEnabled);
-			BeginDisabled(!spotLightEnabled);
-			if (ColorEdit3("Ambient##2", glm::value_ptr(spotLight.ambient)))  changed = true;
-			if (ColorEdit3("Diffuse##2", glm::value_ptr(spotLight.diffuse)))  changed = true;
-			if (ColorEdit3("Specular##2", glm::value_ptr(spotLight.specular)))  changed = true;
-			if (changed) {
-				shader.use();
-				spotLight.set(shader, "spotLight");
-				changed = false;
-			}
-			EndDisabled();
-			*/
-			bool nodeOpened;
-
-			//Remove hover and active colors
-			glm::vec2 oldW(style.Colors[ImGuiCol_HeaderHovered].w, style.Colors[ImGuiCol_HeaderActive].w);
-
-			style.Colors[ImGuiCol_HeaderHovered].w = 0.0f;
-			style.Colors[ImGuiCol_HeaderActive].w = 0.0f;
-
-			//Dir Light
-			nodeOpened = TreeNodeEx("Dir Light");
-
-			SameLine();
-			if (Checkbox("##0", &dirLightEnabled)) {
-				shader.use();
-				shader.set1b("dirLightEnabled", dirLightEnabled);
-				PBRShader.use();
-				PBRShader.set1b("dirLightEnabled", dirLightEnabled);
-			}
-
-			BeginDisabled(!dirLightEnabled);
-			if (nodeOpened) {
-				if (ColorEdit3("Diffuse##0", glm::value_ptr(dirLight.diffuse))) {
-					shader.use();
-					shader.setVec3("dirLight.diffuse", dirLight.diffuse);
-					PBRShader.use();
-					PBRShader.setVec3("dirLight.diffuse", dirLight.diffuse);
-				}
-
-				if (SliderFloat3("Dir##0", glm::value_ptr(dirLight.dir), -1.f, 1.f)){
-					shader.use();
-					shader.setVec3("dirLight.direction", dirLight.dir);
-					PBRShader.use();
-					PBRShader.setVec3("dirLight.direction", dirLight.dir);
-				}
-				NewLine(); //If opened make some space
-				TreePop();
-			}
-			EndDisabled();
-
-
-			//Point Light
-			nodeOpened = TreeNodeEx("Point Light");
-			SameLine();
-			if (Checkbox("##1", &pointLightEnabled)) {
-				shader.use();
-				shader.set1b("pointLightEnabled", pointLightEnabled);
-				PBRShader.use();
-				PBRShader.set1b("pointLightEnabled", pointLightEnabled);
-			}
-
-			BeginDisabled(!pointLightEnabled);
-			if (nodeOpened) {
-				if (ColorEdit3("Diffuse##1", glm::value_ptr(pointLight.diffuse))){
-					shader.use();
-					shader.setVec3("pointLights[0].diffuse", pointLight.diffuse);
-					PBRShader.use();
-					PBRShader.setVec3("pointLights[0].diffuse", pointLight.diffuse);
-				}
-
-				if (SliderFloat3("Pos##1", glm::value_ptr(pointLight.pos), -10, 10)){
-					shader.use();
-					shader.setVec3("pointLights[0].position", pointLight.pos);
-
-					PBRShader.use();
-					PBRShader.setVec3("pointLights[0].position", pointLight.pos);
-				}
-				NewLine(); //If opened make some space
-				TreePop();
-			}
-			EndDisabled();
-
-
-			//Spot Light
-			nodeOpened = TreeNodeEx("Spot Light");
-			SameLine();
-			if (Checkbox("##2", &spotLightEnabled)) {
-				shader.use();
-				shader.set1b("spotLightEnabled", spotLightEnabled);
-				PBRShader.use();
-				PBRShader.set1b("spotLightEnabled", spotLightEnabled);
-			}
-
-			BeginDisabled(!spotLightEnabled);
-			if (nodeOpened) {
-				if (ColorEdit3("Diffuse##2", glm::value_ptr(spotLight.diffuse))){
-					shader.use();
-					shader.setVec3("spotLight.diffuse", spotLight.diffuse);
-					PBRShader.use();
-					PBRShader.setVec3("spotLight.diffuse", spotLight.diffuse);
-				}
-
-				if (SliderFloat("Inner Cutoff", &spotLight.cutOff, 0.f, 180.f)) {
-					spotLight.updateCosCutOff();
-					PBRShader.set1f("spotLight.cutOff", spotLight.cosCutOff);
-				}
-				if (SliderFloat("Outer Cutoff", &spotLight.outerCutOff, 0.f, 180.f)) {
-					spotLight.updateCosOuterCutOff();
-					PBRShader.set1f("spotLight.outerCutOff", spotLight.cosOuterCutOff);
-				}
-				NewLine(); //If opened make some space
-				TreePop();
-			}
-			EndDisabled();
-			style.Colors[ImGuiCol_HeaderHovered].w = oldW.x;
-			style.Colors[ImGuiCol_HeaderActive].w = oldW.y;
-
-			TreePop();
-		}
-		if (TreeNode("Deferred Shading/Rendering")) {
-			Checkbox("Enable Deferred Shading", &deferredShadingEnabled);
-			BeginDisabled(!deferredShadingEnabled);
-			if (RadioButton("Display Position Buffer", &deferredState, 0) ||
-				RadioButton("Display Normal Buffer", &deferredState, 1)   ||
-				RadioButton("Display Albedo Buffer", &deferredState, 2)   ||
-				RadioButton("Display Specular Buffer", &deferredState, 3) ||
-				RadioButton("Display Combined", &deferredState, 4)) {
-					shader.use();
-					shader.set1i("deferredState", deferredState);
-			}
-			EndDisabled();
 			TreePop();
 		}
 		if (TreeNode("PBR")) {
@@ -1492,25 +1335,193 @@ void updateImGui() {
 			EndDisabled();
 			TreePop();
 		}
+		if (TreeNode("Deferred Shading/Rendering")) {
+			Checkbox("Enable Deferred Shading", &deferredShadingEnabled); //Doesn't work with pbr
+			BeginDisabled(!deferredShadingEnabled);
+
+			bool updatePos  = RadioButton("Display Position Buffer", &deferredState, 0);
+			bool updateNorm = RadioButton("Display Normal Buffer", &deferredState, 1);
+			bool updateAlbed= RadioButton("Display Albedo Buffer", &deferredState, 2);
+			bool updateSpec = RadioButton("Display Specular Buffer", &deferredState, 3);
+			bool updateComb = RadioButton("Display Combined Buffer", &deferredState, 4);
+			if (updatePos || updateNorm || updateAlbed || updateSpec || updateComb) {
+				shader.use();
+				shader.set1i("deferredState", deferredState);
+			}
+			EndDisabled();
+			TreePop();
+		}
+		if (TreeNode("Lights")) {
+			/*
+			bool changed;
+			Text("Directional Light");
+			if (Checkbox("Enable Light##0", &dirLightEnabled)) shader.set1b("dirLightEnabled", dirLightEnabled);
+			BeginDisabled(!dirLightEnabled);
+			if (ColorEdit3("Ambient##0", glm::value_ptr(dirLight.ambient))) changed = true;
+			if (ColorEdit3("Diffuse##0", glm::value_ptr(dirLight.diffuse))) changed = true;
+			if (ColorEdit3("Specular##0", glm::value_ptr(dirLight.specular))) changed = true;
+			if (SliderFloat3("Dir", glm::value_ptr(dirLight.dir), -1, 1)) changed = true;
+			if (changed) {
+				shader.use();
+				dirLight.set(shader, "dirLight");
+				changed = false;
+			}
+			EndDisabled();
+
+			Text("Point Light");
+			if (Checkbox("Enable Light##1", &pointLightEnabled)) shader.set1b("pointLightEnabled", pointLightEnabled);
+			BeginDisabled(!pointLightEnabled);
+			if (ColorEdit3("Ambient##1", glm::value_ptr(pointLight.ambient)))  changed = true;
+			if (ColorEdit3("Diffuse##1", glm::value_ptr(pointLight.diffuse)))  changed = true;
+			if (ColorEdit3("Specular##1", glm::value_ptr(pointLight.specular)))  changed = true;
+			if (SliderFloat3("Pos##3", glm::value_ptr(pointLight.pos), -10, 10)) changed = true;
+			if (changed) {
+				shader.use();
+				pointLight.set(shader, "pointLights[0]");
+				changed = false;
+			}
+			EndDisabled();
+
+			Text("Spot Light");
+			if (Checkbox("Enable Light##2", &spotLightEnabled)) shader.set1b("spotLightEnabled", spotLightEnabled);
+			BeginDisabled(!spotLightEnabled);
+			if (ColorEdit3("Ambient##2", glm::value_ptr(spotLight.ambient)))  changed = true;
+			if (ColorEdit3("Diffuse##2", glm::value_ptr(spotLight.diffuse)))  changed = true;
+			if (ColorEdit3("Specular##2", glm::value_ptr(spotLight.specular)))  changed = true;
+			if (changed) {
+				shader.use();
+				spotLight.set(shader, "spotLight");
+				changed = false;
+			}
+			EndDisabled();
+			*/
+			bool nodeOpened;
+
+			//Remove hover and active colors
+			glm::vec2 oldW(style.Colors[ImGuiCol_HeaderHovered].w, style.Colors[ImGuiCol_HeaderActive].w);
+
+			style.Colors[ImGuiCol_HeaderHovered].w = 0.0f;
+			style.Colors[ImGuiCol_HeaderActive].w = 0.0f;
+
+			//Dir Light
+			nodeOpened = TreeNodeEx("Dir Light");
+
+			SameLine();
+			if (Checkbox("##0", &dirLightEnabled)) {
+				shader.use();
+				shader.set1b("dirLightEnabled", dirLightEnabled);
+				PBRShader.use();
+				PBRShader.set1b("dirLightEnabled", dirLightEnabled);
+			}
+
+			BeginDisabled(!dirLightEnabled);
+			if (nodeOpened) {
+				if (ColorEdit3("Diffuse##0", glm::value_ptr(dirLight.diffuse))) {
+					shader.use();
+					shader.setVec3("dirLight.diffuse", dirLight.diffuse);
+					PBRShader.use();
+					PBRShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+				}
+
+				if (SliderFloat3("Dir##0", glm::value_ptr(dirLight.dir), -1.f, 1.f)) {
+					shader.use();
+					shader.setVec3("dirLight.direction", dirLight.dir);
+					PBRShader.use();
+					PBRShader.setVec3("dirLight.direction", dirLight.dir);
+				}
+				NewLine(); //If opened make some space
+				TreePop();
+			}
+			EndDisabled();
+
+
+			//Point Light
+			nodeOpened = TreeNodeEx("Point Light");
+			SameLine();
+			if (Checkbox("##1", &pointLightEnabled)) {
+				shader.use();
+				shader.set1b("pointLightEnabled", pointLightEnabled);
+				PBRShader.use();
+				PBRShader.set1b("pointLightEnabled", pointLightEnabled);
+			}
+
+			BeginDisabled(!pointLightEnabled);
+			if (nodeOpened) {
+				if (ColorEdit3("Diffuse##1", glm::value_ptr(pointLight.diffuse))) {
+					shader.use();
+					shader.setVec3("pointLights[0].diffuse", pointLight.diffuse);
+					PBRShader.use();
+					PBRShader.setVec3("pointLights[0].diffuse", pointLight.diffuse);
+				}
+
+				if (SliderFloat3("Pos##1", glm::value_ptr(pointLight.pos), -10, 10)) {
+					shader.use();
+					shader.setVec3("pointLights[0].position", pointLight.pos);
+
+					PBRShader.use();
+					PBRShader.setVec3("pointLights[0].position", pointLight.pos);
+				}
+				NewLine(); //If opened make some space
+				TreePop();
+			}
+			EndDisabled();
+
+
+			//Spot Light
+			nodeOpened = TreeNodeEx("Spot Light");
+			SameLine();
+			if (Checkbox("##2", &spotLightEnabled)) {
+				shader.use();
+				shader.set1b("spotLightEnabled", spotLightEnabled);
+				PBRShader.use();
+				PBRShader.set1b("spotLightEnabled", spotLightEnabled);
+			}
+
+			BeginDisabled(!spotLightEnabled);
+			if (nodeOpened) {
+				if (ColorEdit3("Diffuse##2", glm::value_ptr(spotLight.diffuse))) {
+					shader.use();
+					shader.setVec3("spotLight.diffuse", spotLight.diffuse);
+					PBRShader.use();
+					PBRShader.setVec3("spotLight.diffuse", spotLight.diffuse);
+				}
+
+				if (SliderFloat("Inner Cutoff", &spotLight.cutOff, 0.f, 180.f)) {
+					spotLight.updateCosCutOff();
+					PBRShader.set1f("spotLight.cutOff", spotLight.cosCutOff);
+				}
+				if (SliderFloat("Outer Cutoff", &spotLight.outerCutOff, 0.f, 180.f)) {
+					spotLight.updateCosOuterCutOff();
+					PBRShader.set1f("spotLight.outerCutOff", spotLight.cosOuterCutOff);
+				}
+				NewLine(); //If opened make some space
+				TreePop();
+			}
+			EndDisabled();
+			style.Colors[ImGuiCol_HeaderHovered].w = oldW.x;
+			style.Colors[ImGuiCol_HeaderActive].w = oldW.y;
+
+			TreePop();
+		}
 		if (TreeNode("Skybox")) {
 			if (RadioButton("Abandoned Room 2K", &currentSkybox, 0)) {
-				hdrTexture.loadTexture("Images/abandoned_tiled_room_2k.hdr");
+				hdrTexture.loadHDRMap("Images/abandoned_tiled_room_2k.hdr");
 				updateIBL();
 			}
 			if (RadioButton("Abandoned Room 4K", &currentSkybox, 1)) {
-				hdrTexture.loadTexture("Images/abandoned_tiled_room_4k.hdr");
+				hdrTexture.loadHDRMap("Images/abandoned_tiled_room_4k.hdr");
 				updateIBL();
 			}
 			if (RadioButton("Grass Field", &currentSkybox, 2)) {
-				hdrTexture.loadTexture("Images/HDR_029_Sky_Cloudy_Ref.hdr");
+				hdrTexture.loadHDRMap("Images/HDR_029_Sky_Cloudy_Ref.hdr");
 				updateIBL();
 			}
 			if (RadioButton("Thatch Chapel 2K", &currentSkybox, 3)) {
-				hdrTexture.loadTexture("Images/thatch_chapel_2k.hdr");
+				hdrTexture.loadHDRMap("Images/thatch_chapel_2k.hdr");
 				updateIBL();
 			}
 			if (RadioButton("Thatch Chapel 4K", &currentSkybox, 4)) {
-				hdrTexture.loadTexture("Images/thatch_chapel_4k.hdr");
+				hdrTexture.loadHDRMap("Images/thatch_chapel_4k.hdr");
 				updateIBL();
 			}
 
@@ -1540,6 +1551,47 @@ void updateImGui() {
 			BeginDisabled(antiAliasing != 1);
 			if (SliderInt("MSAA Sample Count", &msaaSampleCount, 1, 8))
 				setupMSAA();
+			EndDisabled();
+			NewLine();
+
+			Text("FXAA Options");
+			BeginDisabled(antiAliasing != 2);
+			if (SliderFloat("FXAA_EDGE_THRESHOLD_MIN", &EDGE_THRESHOLD_MIN, 0, 1, "%.4f")) {
+				postprocShader.use();
+				postprocShader.set1f("EDGE_THRESHOLD_MIN", EDGE_THRESHOLD_MIN);
+				fxaaRevert = true;
+			}
+			if (SliderFloat("FXAA_EDGE_THRESHOLD_MAX", &EDGE_THRESHOLD_MAX, 0, 1, "%.4f")) {
+				postprocShader.use();
+				postprocShader.set1f("EDGE_THRESHOLD_MAX", EDGE_THRESHOLD_MAX);
+				fxaaRevert = true;
+			}
+			if (SliderInt("FXAA_ITERATIONS", &ITERATIONS, 0, 100)) {
+				postprocShader.use();
+				postprocShader.set1i("ITERATIONS", ITERATIONS);
+				fxaaRevert = true;
+			}
+			if (SliderFloat("FXAA_SUBPIXEL_QUALITY", &SUBPIXEL_QUALITY, 0, 1, "%.4f")) {
+				postprocShader.use();
+				postprocShader.set1f("SUBPIXEL_QUALITY", SUBPIXEL_QUALITY);
+				fxaaRevert = true;
+			}
+			if (fxaaRevert) {
+				if(Button("Revert##0", ImVec2(50.f, 20.f))) {
+					EDGE_THRESHOLD_MIN = DEFAULT_EDGE_THRESHOLD_MIN;
+					EDGE_THRESHOLD_MAX = DEFAULT_EDGE_THRESHOLD_MAX;
+					ITERATIONS		   = DEFAULT_ITERATIONS;
+					SUBPIXEL_QUALITY   = DEFAULT_SUBPIXEL_QUALITY;
+
+					postprocShader.use();
+					postprocShader.set1f("EDGE_THRESHOLD_MIN", EDGE_THRESHOLD_MIN);
+					postprocShader.set1f("EDGE_THRESHOLD_MAX", EDGE_THRESHOLD_MAX);
+					postprocShader.set1i("ITERATIONS", ITERATIONS);
+					postprocShader.set1f("SUBPIXEL_QUALITY", SUBPIXEL_QUALITY);
+
+					fxaaRevert = false;
+				}
+			}
 			EndDisabled();
 			
 			NewLine();
@@ -1606,7 +1658,7 @@ void updateImGui() {
 		Text(("Vendor: " + vendor).c_str());
 		Text(("GPU Version: " + gpuVersion).c_str());
 	}
-	if (CollapsingHeader("About")) {
+	if (CollapsingHeader("About", ImGuiTreeNodeFlags_DefaultOpen)) {
 		unsigned int windowWidth = GetWindowWidth();
 		TextWrapped("Render Engine made with OGL and C++ by Alexander Atanasov.", windowWidth);
 		
@@ -1708,27 +1760,28 @@ void updateIBL() {
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 }
 void updateModelMatrices() {
-	modelMat = glm::scale(glm::mat4(1.f), modelScale);
-	modelMat = glm::translate(modelMat, modelPos);
-
+	modelScaleMat = objectScaleMat * glm::scale(glm::mat4(1.f), modelScale);
+	modelTransMat = objectTransMat * glm::translate(glm::mat4(1.f), modelPos);
 	if (modelRot != glm::vec3(0.f)) {
-		modelMat = glm::rotate(modelMat, glm::radians(modelRot.x), glm::vec3(1.f, 0.f, 0.f));
-		modelMat = glm::rotate(modelMat, glm::radians(modelRot.y), glm::vec3(0.f, 1.f, 0.f));
-		modelMat = glm::rotate(modelMat, glm::radians(modelRot.z), glm::vec3(0.f, 0.f, 1.f));
+		modelRotMat = glm::rotate(glm::mat4(1.f), glm::radians(modelRot.x), glm::vec3(1.f, 0.f, 0.f));
+		modelRotMat = glm::rotate(modelRotMat,	  glm::radians(modelRot.y), glm::vec3(0.f, 1.f, 0.f));
+		modelRotMat = glm::rotate(modelRotMat,	  glm::radians(modelRot.z), glm::vec3(0.f, 0.f, 1.f));
 	}
-
-	modelMat = objectMat * modelMat; //Multiply by parent matrix
+	else
+		modelRotMat = glm::mat4(1.f);
+	modelRotMat = objectRotMat * modelRotMat;
+	modelRotScaleMat = modelRotMat * modelScaleMat; //Optimization
 }
 void updateObjectMatrices() {
-	objectMat = glm::scale(glm::mat4(1.f), objectScale);
-	objectMat = glm::translate(objectMat, objectPos);
-
+	objectScaleMat = glm::scale(glm::mat4(1.f), objectScale);
+	objectTransMat = glm::translate(glm::mat4(1.f), objectPos);
 	if (objectRot != glm::vec3(0.f)) {
-		objectMat = glm::rotate(objectMat, glm::radians(objectRot.x), glm::vec3(1.f, 0.f, 0.f));
-		objectMat = glm::rotate(objectMat, glm::radians(objectRot.y), glm::vec3(0.f, 1.f, 0.f));
-		objectMat = glm::rotate(objectMat, glm::radians(objectRot.z), glm::vec3(0.f, 0.f, 1.f));
+		objectRotMat = glm::rotate(glm::mat4(1.f), glm::radians(objectRot.x), glm::vec3(1.f, 0.f, 0.f));
+		objectRotMat = glm::rotate(objectRotMat, glm::radians(objectRot.y), glm::vec3(0.f, 1.f, 0.f));
+		objectRotMat = glm::rotate(objectRotMat, glm::radians(objectRot.z), glm::vec3(0.f, 0.f, 1.f));
 	}
-
+	else
+		objectRotMat = glm::mat4(1.f);
 	updateModelMatrices();
 }
 void updateCurrentModel() {
@@ -1736,25 +1789,28 @@ void updateCurrentModel() {
 	case 0:
 		modelPtr = &gun;
 
-		modelScale = glm::vec3(0.04f);
+		modelPos = glm::vec3(0.f);
+		modelScale = glm::vec3(0.02f);
 		modelRot = glm::vec3(270.f, 0.f, 0.f);
 		break;
 	case 1:
 		modelPtr = &suzanne;
 
+		modelPos = glm::vec3(0.f);
 		modelScale = glm::vec3(1.f);
 		modelRot = glm::vec3(0.f);
 		break;
 	case 2:
 		modelPtr = &backpack;
 
+		modelPos = glm::vec3(0.f);
 		modelScale = glm::vec3(1.f);
 		modelRot = glm::vec3(270.f, 0.f, 0.f);
 		break;
 	}
 
 	updateMaterial();
-	updateModelMatrices();
+	updateObjectMatrices();
 }
 void updateMaterial() {
 	if(materialState == 0)
@@ -1784,7 +1840,7 @@ void updateUniforms(Shader& shader) {
 		shader.setVec3("spotLight.direction", cam.camFront);
 	}
 
-	shader.setMat4("model", objectDemoRot * modelMat);
+	shader.setMat4("model", model);
 }
 
 //Callback
@@ -1819,6 +1875,33 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 //Every Frame
+void setupMainLoop() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	dt.updateDT();
+
+	processInput(window);
+	if (mouseLocked)
+		cam.processInput(window);
+
+	//Setup IMGUI
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	NewFrame();
+
+	io = GetIO();
+
+	cam.updateView();
+	view = cam.getView();
+
+	if (demoRotation) objectDemoRot = glm::rotate(objectDemoRot, demoRotSpeed * dt.deltaTime, glm::vec3(0.f, 1.f, 0.f));
+	model = modelTransMat * objectDemoRot * modelRotScaleMat;
+	updateUniforms(shader);
+	updateUniforms(PBRShader);
+	updateUniforms(deferredShader);
+}
 void renderScene(Shader& shader, Shader& PBRShader) {
 	/*shader.use();
 
