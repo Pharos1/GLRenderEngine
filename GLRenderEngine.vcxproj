@@ -177,6 +177,7 @@
     <ClInclude Include="src\Vertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="README.md" />
     <None Include="Shaders\bloom.frag" />
     <None Include="Shaders\blur.frag" />
     <None Include="Shaders\cubemap.vert" />

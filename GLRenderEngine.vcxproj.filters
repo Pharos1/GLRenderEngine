@@ -139,6 +139,7 @@
     <None Include="Shaders\cubemap.vert" />
     <None Include="Shaders\lightBox.vert" />
     <None Include="Shaders\lightBox.frag" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\bottleneck.txt" />
