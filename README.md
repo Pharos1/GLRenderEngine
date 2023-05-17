@@ -14,4 +14,4 @@ installation easy. If it is useful for you, this project is made in Visual Studi
 I want to give credit to Joey DeVries, the author of 'LearnOpenGL,' for creating such a masterpiece that helped many in their journey in computer graphics.
 
 ## Other
-The version for my first video on GLRenderEngine: github.com/Pharos1/GLRenderEngine/releases/tag/v0.1.0
+The version for my first video on [GLRenderEngine](github.com/Pharos1/GLRenderEngine/releases/tag/v0.1.0)
