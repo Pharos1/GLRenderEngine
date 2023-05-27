@@ -60,9 +60,9 @@ public:
         shader.setVec3(lightName + ".diffuse", diffuse);
         //shader.setVec3(lightName + ".specular", specular);
 
-        shader.set1f(lightName + ".constant", constant);
-        shader.set1f(lightName + ".linear", linear);
-        shader.set1f(lightName + ".quadratic", quadratic);
+        //shader.set1f(lightName + ".constant", constant);
+        //shader.set1f(lightName + ".linear", linear);
+        //shader.set1f(lightName + ".quadratic", quadratic);
 
         shader.set1f(lightName + ".intensity", intensity);
     }
@@ -72,9 +72,9 @@ public:
     glm::vec3 pos;
     glm::vec3 dir;
 
-    float constant;
-    float linear;
-    float quadratic;
+    //float constant;
+    //float linear;
+    //float quadratic;
 
     float cutOff;
     float outerCutOff;
@@ -120,9 +120,9 @@ public:
         shader.setVec3(lightName + ".diffuse", diffuse);
         //shader.setVec3(lightName + ".specular", specular);
 
-        shader.set1f(lightName + ".constant", constant);
-        shader.set1f(lightName + ".linear", linear);
-        shader.set1f(lightName + ".quadratic", quadratic);
+        //shader.set1f(lightName + ".constant", constant);
+        //shader.set1f(lightName + ".linear", linear);
+        //shader.set1f(lightName + ".quadratic", quadratic);
 
         updateCosCutOff();
         updateCosOuterCutOff();

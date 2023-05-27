@@ -1,10 +1,10 @@
-#version 330 core
+#version 420 core
 out vec4 FragColor;
   
 in vec2 texCoord;
 
-uniform sampler2D scene;
-uniform sampler2D bloomBlur;
+layout(binding = 0) uniform sampler2D scene;
+layout(binding = 1) uniform sampler2D bloomBlur;
 uniform float exposure;
 
 void main()

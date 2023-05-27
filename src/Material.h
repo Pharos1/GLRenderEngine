@@ -13,7 +13,7 @@ public:
 	Texture metallic;
 	Texture roughness;
 	Texture AO; //Ambient occlusion
-	float shininess = 32.f;
+	float shininessExponent = 32.f;
 
 	bool initialized = false;
 
@@ -23,8 +23,8 @@ public:
 		this->initialized = true;
 	}
 	Material() {};
-
-	static void setIndices(Shader& shader, std::string variableName = "material") {
+	
+	/*static void setIndices(Shader& shader, std::string variableName = "material") {
 		shader.use();
 
 		shader.set1i(variableName + ".albedo", 0);
@@ -32,7 +32,7 @@ public:
 		shader.set1i(variableName + ".metallic", 2);
 		shader.set1i(variableName + ".roughness", 3);
 		shader.set1i(variableName + ".AO", 4);
-	}
+	}*/
 	void bind(Shader& shader) {
 		shader.use();
 
@@ -47,7 +47,7 @@ public:
 		roughness.bind(3);
 		AO.bind(4);
 
-		shader.set1f("material.shininess", shininess);
+		shader.set1f("shininessExponent", shininessExponent);
 	}
 	void unbind() {
 		albedo.unbind(0); //If it was loaded then you can bind it

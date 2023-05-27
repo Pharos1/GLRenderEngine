@@ -1,10 +1,10 @@
-#version 330 core
+#version 420 core
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
 
 in vec3 worldPos;
 
-uniform samplerCube skybox;
+layout(binding = 0) uniform samplerCube skybox;
 uniform bool bloomOn;
 
 void main(){

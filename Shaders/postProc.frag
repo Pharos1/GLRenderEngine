@@ -1,20 +1,23 @@
-#version 330 core
+#version 420 core
 out vec4 FragColor;
   
 in vec2 texCoord;
 
-const uint hdr    = 0x00000001u; //Make thoose preprocessor
-const uint gammaCorrection = 0x00000002u;
-const uint bloom  = 0x00000004u;
-const uint blur   = 0x00000008u;
-const uint other   = 0x00000032u;
+//const uint hdr    = 0x00000001u; //Make thoose preprocessor
+//const uint gammaCorrection = 0x00000002u;
+//const uint bloom  = 0x00000004u;
+//const uint blur   = 0x00000008u;
+//const uint other   = 0x00000032u;
 
-uniform sampler2D colorBuffer;
-uniform sampler2D bloomBlur;
+layout(binding = 0) uniform sampler2D colorBuffer;
+layout(binding = 1) uniform sampler2D bloomBlur;
 
 uniform float exposure;
 uniform float gamma;
-uniform uint flags;
+//uniform uint flags;
+uniform bool gammaOn;
+uniform bool bloomOn;
+uniform bool blurOn;
 
 uniform int tonemapMode;
 
@@ -34,7 +37,7 @@ vec3 narkowiczACES(vec3 color);
 vec3 fxaa();
 
 //All credits Stephen Hill (@self_shadow) for creating the ACES Tone Mapping
-mat3 ACESInputMat = { //The matrix is a transposed version of the original so it matches the column major order of glsl
+mat3 ACESInputMat = { //The matrix is a transposed version of the original so it matches the row major order of glsl
 	vec3(0.59719f, 0.07600f, 0.02840f),
 	vec3(0.35458f, 0.90834f, 0.13383f),
 	vec3(0.04823f, 0.01566f, 0.83777f),
@@ -60,11 +63,14 @@ vec3 hillACES(vec3 color){
 }
 
 void main(){
-	vec3 color = texture(colorBuffer, texCoord).rgb;
-	vec3 result = color;
-	
-	if(fxaaEnabled) result = fxaa();
+	vec3 result;
+
+	if(fxaaEnabled) result = fxaa(); //It should be in another pass, after hdr
+	else result = texture(colorBuffer, texCoord).rgb;
+
 	switch(tonemapMode){
+		case 0:
+			break;
 		case 1:
 			result = reinhard(result);
 			break;
@@ -83,15 +89,15 @@ void main(){
 		case 6:
 			result = manualExposure(result);
 			break;
-		default:
-			result = result;
-			break;
 	}
-	if(bool(flags & bloom)){
+	if(bloomOn){ //bool(flags & bloom)
 		result += texture(bloomBlur, texCoord).rgb;
 	}
-	if(bool(flags & gammaCorrection)){
+	if(gammaOn){
 		result = pow(result, vec3(1.0 / gamma));
+	}
+	if(blurOn){
+		//Has to be implemented
 	}
 	FragColor = vec4(result, 1.f);
 }

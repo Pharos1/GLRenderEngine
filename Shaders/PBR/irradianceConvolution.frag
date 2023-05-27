@@ -1,8 +1,8 @@
-#version 330 core
+#version 420 core
 out vec4 FragColor;
 in vec3 worldPos;
 
-uniform samplerCube environmentMap;
+layout(binding = 0) uniform samplerCube environmentMap;
 
 const float PI = 3.14159265359;
 

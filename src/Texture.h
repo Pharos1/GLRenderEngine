@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 #include <SOIL2/stb_image.h>
 #include <SOIL2/SOIL2.h>
+#include <chrono>
 
 class Texture {
 public:
@@ -23,10 +24,10 @@ public:
 	GLuint id = 0;
 
 	GLuint getID() const { return this->id; }
-	void bind(const GLint texture_unit) {
+	void bind(const GLint textureUnit) {
 		if (!this->id) return;
 
-		glActiveTexture(GL_TEXTURE0 + texture_unit);
+		glActiveTexture(GL_TEXTURE0 + textureUnit);
 		glBindTexture(this->glType, this->id);
 	}
 	void unbind(const GLint texture_unit) {
@@ -46,12 +47,13 @@ public:
 			return;
 		}
 
+		glActiveTexture(GL_TEXTURE0);
+
 		this->path = path;
 		this->glType = glType;
 
 		if (!this->id) glGenTextures(1, &id);
-
-		bool data = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGBA, this->id, invertY ? SOIL_FLAG_INVERT_Y : 0);
+		bool data = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_RGB, this->id, invertY ? SOIL_FLAG_INVERT_Y : 0);
 
 		if (data) {
 			glTexParameteri(glType, GL_TEXTURE_WRAP_S, GL_REPEAT); //Note: When using transparency its good to use GL_CLAMP_TO_EDGE instead of GL_REPEAT to prevent interpolation of colors on the top of the texture
@@ -64,8 +66,7 @@ public:
 		else
 			std::cout << "ERROR::SOIL LAST RESULT: '" << SOIL_last_result() << "' while loading: " << path << std::endl;
 
-		glActiveTexture(GL_TEXTURE0); //Unbind
-		glBindTexture(glType, 0);
+		glBindTexture(glType, 0); //Unbind
 	}
 
 	Texture(std::string path, bool invertY = false, GLenum glType = GL_TEXTURE_2D) {
