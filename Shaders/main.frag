@@ -1,4 +1,4 @@
-#version 330 core
+#version 420 core
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
 
@@ -11,15 +11,18 @@ in vec2 texCoord;
 in vec4 fragPosLightSpace;
 
 in mat3 TBN;
-struct Material {
-	sampler2D albedo;
-	sampler2D normal;
-	sampler2D metallic;
-	sampler2D roughness;
-	sampler2D AO;
 
-	float shininess;
-};
+layout(binding = 0) uniform sampler2D albedoTex;
+layout(binding = 1) uniform sampler2D normalTex;
+layout(binding = 2) uniform sampler2D metallicTex;
+layout(binding = 3) uniform sampler2D roughnessTex;
+layout(binding = 4) uniform sampler2D AOTex;
+uniform float shininessExponent;
+
+layout(binding = 5) uniform sampler2D positionBuffer;
+layout(binding = 6) uniform sampler2D normalBuffer;
+layout(binding = 7) uniform sampler2D albedoBuffer;
+
 
 struct DirLight {
 	vec3 direction;
@@ -62,8 +65,6 @@ uniform DirLight dirLight;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLight;
 
-uniform Material material;
-
 uniform bool dirLightEnabled;
 uniform bool pointLightEnabled;
 uniform bool spotLightEnabled;
@@ -72,34 +73,18 @@ uniform bool spotLightEnabled;
 uniform bool deferredEnabled;
 uniform int deferredState = 4;
 
-uniform sampler2D positionBuffer;
-uniform sampler2D normalBuffer;
-uniform sampler2D albedoBuffer;
-
 uniform bool transformSRGB;
 
 //Global variables
 vec3 viewDir;
 
 //Methods
-//vec3 lightDir(vec3 lightPos);
 float spec(vec3 lightDir, vec3 normal);
 vec3 CalcDirLight(DirLight light, vec3 normal, vec2 texCoord, float shininess, vec3 fragPos, vec3 albedo);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec2 texCoord, float shininess, vec3 fragPos, vec3 albedo);
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec2 texCoord, float shininess, vec3 fragPos, vec3 albedo);
 vec3 getNormalFromMap(){
-    vec3 tangentNormal = texture(material.normal, texCoord).xyz * 2.0 - 1.0;
-
-    //vec3 Q1  = dFdx(worldPos);
-    //vec3 Q2  = dFdy(worldPos);
-    //vec2 st1 = dFdx(texCoord);
-    //vec2 st2 = dFdy(texCoord);
-	//
-    //vec3 N   = normalize(normal);
-    //vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
-    //vec3 B  = -normalize(cross(N, T));
-    //mat3 TBN = mat3(T, B, N);
-
+    vec3 tangentNormal = texture(normalTex, texCoord).xyz * 2.0 - 1.0;
     return normalize(TBN * tangentNormal);
 }
 
@@ -254,11 +239,11 @@ void main(){
 	}
 	else{
 		aWorldPos = worldPos;
-		albedo = texture(material.albedo, texCoord).rgb;
-		shininess = texture(material.metallic, texCoord).r;
+		albedo = texture(albedoTex, texCoord).rgb;
+		shininess = texture(metallicTex, texCoord).r;
 		//aNormal = texture(material.texture_normal1, texCoord).rgb;
 		//aNormal = normalize(aNormal * 2.0 - 1.0);
-		if(texture(material.normal, texCoord).rgb == vec3(0.f) || TBN == mat3(0.f)) //If normalMap is empty or you cant transform a normal map to a normal vector just use the vertex normal vector
+		if(texture(normalTex, texCoord).rgb == vec3(0.f) || TBN == mat3(0.f)) //If normalMap is empty or you cant transform a normal map to a normal vector just use the vertex normal vector
 			aNormal = normal;
 		else
 			aNormal = getNormalFromMap();
@@ -363,7 +348,7 @@ void main(){
 float spec(vec3 lightDir, vec3 aNormal){
 	vec3 halfwayDir = normalize(lightDir + viewDir);
 
-	return pow(max(dot(aNormal, halfwayDir), 0.0), material.shininess);
+	return pow(max(dot(aNormal, halfwayDir), 0.0), shininessExponent);
 }
 vec3 CalcDirLight(DirLight light, vec3 normal, vec2 texCoord, float shininess, vec3 fragPos, vec3 albedo){
 	if(light.diffuse == vec3(0.f)) return vec3(0.f); //If empty just stop

@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef SHADER
 #define SHADER
 
@@ -9,10 +7,9 @@
 #include<iostream>
 #include<GLM/glm.hpp>
 
+//Note: Shaders remove inactive uniforms i.e. uniforms that don't contribute to the final result.
 class Shader {
 private:
-	unsigned int ID;
-
 	void checkCompileErrors(GLuint shader, std::string type) {
 		GLint success;
 		GLchar infoLog[1024];
@@ -32,6 +29,7 @@ private:
 		}
 	}
 public:
+	unsigned int ID = 0;
 	void loadShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) {
 		std::string vertexContent;
 		std::string fragmentContent;
@@ -57,8 +55,8 @@ public:
 
 			vertexContent = vShaderStream.str();
 			fragmentContent = fShaderStream.str();
-			if (geometryPath != nullptr)
-			{
+
+			if (geometryPath != nullptr){
 				gShaderFile.open(geometryPath);
 				std::stringstream gShaderStream;
 				gShaderStream << gShaderFile.rdbuf();
@@ -77,7 +75,7 @@ public:
 
 		GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
 		GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
-		GLuint geometry = glCreateShader(GL_GEOMETRY_SHADER);
+		GLuint geometry = (geometryPath != nullptr) ? glCreateShader(GL_GEOMETRY_SHADER) : 0;
 		int success;
 		char infoLog[512];
 
@@ -99,9 +97,9 @@ public:
 			checkCompileErrors(geometry, "GEOMETRY");
 		}
 
-
 		//Define shader program
-		ID = glCreateProgram();
+		if(!ID) ID = glCreateProgram(); //If it doesn't have an ID just give it
+
 		glAttachShader(ID, vertex);
 		glAttachShader(ID, fragment);
 		if (geometryPath != nullptr) glAttachShader(ID, geometry);
@@ -115,31 +113,97 @@ public:
 		}
 
 		//Clear the shader after they are linked
+		glDetachShader(ID, vertex);
+		glDetachShader(ID, fragment);
+		if (geometryPath != nullptr) glDetachShader(ID, geometry);
+
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
-		glDeleteShader(geometry);
+		if (geometryPath != nullptr) glDeleteShader(geometry);
 	}
 	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) {
 		loadShader(vertexPath, fragmentPath, geometryPath);
 	};
 	Shader() {};
+	~Shader() { deleteProgram(); };
 
-	int getID() { return ID; }
+	int getID() { return ID; };
 	void use() { glUseProgram(ID); };
-	void unuse() { glDeleteProgram(ID); };
-	void set1b(const std::string& name, bool value)  const { glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value); };
-	void set1i(const std::string& name, int value)   const { glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value); };
-	void set1ui(const std::string& name, unsigned int value)   const { glUniform1ui(glGetUniformLocation(ID, name.c_str()), (int)value); };
-	void set1f(const std::string& name, float value) const { glUniform1f(glGetUniformLocation(ID, name.c_str()), (float)value); };
-	void set2f(const std::string& name, float x, float y) const { glUniform2f(glGetUniformLocation(ID, name.c_str()), x, y); }
-	void set3f(const std::string& name, float x, float y, float z) const { glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z); }
-	void set4f(const std::string& name, float x, float y, float z, float w) const { glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w); }
-	void setMat4fv(const std::string& name, GLfloat* mat4) const { glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, mat4); }
-	void setMat4(const std::string& name, glm::mat4 mat4) const { glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat4)); }
-	void setMat3(const std::string& name, glm::mat3 mat3) const { glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat3)); }
-	void setVec2(const std::string& name, glm::vec2 vec2) const { glUniform2f(glGetUniformLocation(ID, name.c_str()), vec2.x, vec2.y); }
-	void setVec3(const std::string& name, glm::vec3 vec3) const { glUniform3f(glGetUniformLocation(ID, name.c_str()), vec3.x, vec3.y, vec3.z); }
-	void setVec4(const std::string& name, glm::vec4 vec4) const { glUniform4f(glGetUniformLocation(ID, name.c_str()), vec4.x, vec4.y, vec4.z, vec4.w); }
+	void unuse() { glUseProgram(0); };
+	void deleteProgram() { glDeleteProgram(ID); };
+
+	void set1b(const std::string& name, bool value) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniform1i(location, (int)value);
+		else
+			return;// std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
+	void set1i(const std::string& name, int value) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniform1i(location, (int)value);
+		else
+			return; //std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
+	void set1ui(const std::string& name, unsigned int value) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniform1ui(location, (int)value);
+		else
+			return; //std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
+	void set1f(const std::string& name, float value) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniform1f(location, (float)value);
+		else
+			return;// std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
+	void setMat3(const std::string& name, glm::mat3 mat3) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat3));
+		else
+			return; //std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
+	void setMat4(const std::string& name, glm::mat4 mat4) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat4));
+		else
+			return; //std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
+	void setVec2(const std::string& name, glm::vec2 vec2) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniform2f(location, vec2.x, vec2.y);
+		else
+			return; //std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
+	void setVec3(const std::string& name, glm::vec3 vec3) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniform3f(glGetUniformLocation(ID, name.c_str()), vec3.x, vec3.y, vec3.z);
+		else
+			return; //std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
+	void setVec4(const std::string& name, glm::vec4 vec4) {
+		int location = glGetUniformLocation(ID, name.c_str());
+
+		if (location != -1)
+			glUniform4f(glGetUniformLocation(ID, name.c_str()), vec4.x, vec4.y, vec4.z, vec4.w);
+		else
+			return; //std::cout << "WARNING::SHADER.H::An active uniform corresponding to the name '" << name << "' was not found!\n";
+	}
 };
 
 #endif

@@ -18,9 +18,6 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\imgui\imgui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -40,6 +37,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\imgui\imgui_widgets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -116,7 +116,6 @@
     <None Include="Shaders\Shadow\cubemapShadow.vert" />
     <None Include="Shaders\debug.frag" />
     <None Include="Shaders\deferred.frag" />
-    <None Include="Shaders\hdr.frag" />
     <None Include="Shaders\PBR\PBR.frag" />
     <None Include="Shaders\postProc.frag" />
     <None Include="Shaders\renderQuad.frag" />
@@ -127,19 +126,17 @@
     <None Include="Shaders\Shadow\shadow.vert" />
     <None Include="Shaders\skybox.frag" />
     <None Include="Shaders\skybox.vert" />
-    <None Include="Shaders\SSAO.frag" />
-    <None Include="Shaders\SSAO.vert" />
     <None Include="Shaders\PBR\PBR.vert" />
     <None Include="Shaders\PBR\EquirectangularToCubemap.frag" />
     <None Include="Shaders\PBR\hdrSkybox.frag" />
     <None Include="Shaders\PBR\irradianceConvolution.frag" />
     <None Include="Shaders\PBR\prefilter.frag" />
-    <None Include="Shaders\PBR\brdfShader.vert" />
     <None Include="Shaders\PBR\brdfShader.frag" />
     <None Include="Shaders\cubemap.vert" />
     <None Include="Shaders\lightBox.vert" />
     <None Include="Shaders\lightBox.frag" />
     <None Include="README.md" />
+    <None Include="Shaders\hdr.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\bottleneck.txt" />

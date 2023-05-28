@@ -72,12 +72,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)..\OpenGLFiles\include;</IncludePath>
-    <LibraryPath>$(SolutionDir)..\OpenGLFiles\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(SolutionDir)OpenGLFiles\include;</IncludePath>
+    <LibraryPath>$(SolutionDir)OpenGLFiles\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)..\OpenGLFiles\include;</IncludePath>
-    <LibraryPath>$(SolutionDir)..\OpenGLFiles\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(SolutionDir)OpenGLFiles\include;</IncludePath>
+    <LibraryPath>$(SolutionDir)OpenGLFiles\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -111,7 +111,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GLEW_STATIC;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(IncludePath)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -119,7 +119,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SOIL\soil2.lib;ASSIMP/assimp-vc143-mtd.lib;GLFW\glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>GLEW\glew32s.lib;SOIL\soil2.lib;ASSIMP\assimp-vc143-mtd.lib;GLFW\glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
@@ -130,7 +130,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GLEW_STATIC;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
@@ -139,11 +139,11 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SOIL\soil2.lib;ASSIMP/assimp-vc143-mtd.lib;GLFW\glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>GLEW\glew32s.lib;SOIL\soil2.lib;ASSIMP\assimp-vc143-mtd.lib;GLFW\glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="gl.c" />
+    <ClCompile Include="glad.c" />
     <ClCompile Include="src\imgui\imgui.cpp" />
     <ClCompile Include="src\imgui\imgui_demo.cpp" />
     <ClCompile Include="src\imgui\imgui_draw.cpp" />
@@ -181,17 +181,16 @@
     <None Include="Shaders\bloom.frag" />
     <None Include="Shaders\blur.frag" />
     <None Include="Shaders\cubemap.vert" />
+    <None Include="Shaders\hdr.frag" />
     <None Include="Shaders\lightBox.frag" />
     <None Include="Shaders\lightBox.vert" />
     <None Include="Shaders\PBR\brdfShader.frag" />
-    <None Include="Shaders\PBR\brdfShader.vert" />
     <None Include="Shaders\Shadow\cubemapShadow.frag" />
     <None Include="Shaders\Shadow\cubemapShadow.geom" />
     <None Include="Shaders\Shadow\cubemapShadow.vert" />
     <None Include="Shaders\debug.frag" />
     <None Include="Shaders\deferred.frag" />
     <None Include="Shaders\PBR\EquirectangularToCubemap.frag" />
-    <None Include="Shaders\hdr.frag" />
     <None Include="Shaders\PBR\irradianceConvolution.frag" />
     <None Include="Shaders\PBR\hdrSkybox.frag" />
     <None Include="Shaders\PBR\PBR.frag" />
@@ -206,8 +205,6 @@
     <None Include="Shaders\skybox.frag" />
     <None Include="Shaders\skybox.vert" />
     <None Include="Shaders\PBR\prefilter.frag" />
-    <None Include="Shaders\SSAO.frag" />
-    <None Include="Shaders\SSAO.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\bottleneck.txt" />

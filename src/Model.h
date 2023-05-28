@@ -24,6 +24,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+
 using namespace std;
 
 class Model{
@@ -32,6 +33,8 @@ public:
 	vector<Texture*> loadedTextures;
 	vector<MaterialMesh>    meshes;
 	string directory;
+
+	//glm::mat4 localModelMat;
 
 	Model(string const& path){
 		loadModel(path);
@@ -71,7 +74,6 @@ public:
 		for (unsigned int i = 0; i < node->mNumChildren; i++){
 			processNode(node->mChildren[i], scene);
 		}
-
 	}
 	MaterialMesh processMesh(aiMesh* mesh, const aiScene* scene, aiNode* node){
 		vector<Vertex> vertices;
@@ -116,7 +118,6 @@ public:
 
 		MaterialMesh finalMesh(vertices, indices);
 
-		std::cout << scene->HasMaterials() << std::endl;
 		if (scene->HasMaterials()) {
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
@@ -128,6 +129,14 @@ public:
 
 			finalMesh.material.initialized = true;
 		}
+		/*
+		for (size_t row = 0; row < 4; row++) {
+			for (size_t col = 0; col < 4; col++) {
+				localModelMat[row][col] = node->mTransformation[row][col];
+			}
+		}
+		*/
+
 		return finalMesh;
 	}
 	/*vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName) {

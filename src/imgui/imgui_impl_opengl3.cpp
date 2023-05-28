@@ -82,7 +82,7 @@
 //  3.0       130       "#version 130"
 //  3.1       140       "#version 140"
 //  3.2       150       "#version 150"
-//  3.3       330       "#version 330 core"
+//  3.3       330       "#version 420 core"
 //  4.0       400       "#version 400 core"
 //  4.1       410       "#version 410 core"
 //  4.2       420       "#version 410 core"

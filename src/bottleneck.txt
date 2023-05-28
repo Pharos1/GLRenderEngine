@@ -6,3 +6,4 @@ My Benchmark:
 	->loading the pbrGun material took ~1538ms (every texture takes ~250ms)
 		->stbi_load took ~200ms(THIS IS BECAUSE OF THE SIZE OF THE TEXTURES)
 		->glTexImage2D took ~50ms
+Setting uniforms for all 3 shaders takes around 1.1ms

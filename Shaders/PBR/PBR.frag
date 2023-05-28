@@ -1,4 +1,4 @@
-#version 330 core
+#version 420 core
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
 
@@ -8,15 +8,15 @@ in vec3 normal;
 in mat3 TBN;
 in mat3 transposeModel;
 
-// material parameters
+layout(binding = 0) uniform sampler2D albedoTex;
+layout(binding = 1) uniform sampler2D normalTex;
+layout(binding = 2) uniform sampler2D metallicTex;
+layout(binding = 3) uniform sampler2D roughnessTex;
+layout(binding = 4) uniform sampler2D AOTex;
+layout(binding = 5) uniform samplerCube irradianceMap;
+layout(binding = 6) uniform samplerCube prefilterMap;
+layout(binding = 7) uniform sampler2D   brdfLUT;
 
-struct Material {
-	sampler2D albedo;
-	sampler2D normal;
-	sampler2D metallic;
-	sampler2D roughness;
-	sampler2D AO; //Ambient occlusion
-};
 struct DirLight{
 	vec3 direction;
 	vec3 diffuse;
@@ -50,14 +50,9 @@ uniform bool dirLightEnabled;
 uniform bool pointLightEnabled;
 uniform bool spotLightEnabled;
 
-// IBL
-uniform samplerCube irradianceMap;
-uniform samplerCube prefilterMap;
-uniform sampler2D   brdfLUT;
-
+//IBL
 uniform vec3 viewPos;
 
-uniform Material material;
 uniform bool iblEnabled;
 
 uniform bool transformSRGB;
@@ -116,7 +111,7 @@ vec3 CalcPointLight(PointLight light, vec3 albedo, vec3 normal, float metallic, 
 vec3 CalcSpotLight(SpotLight light, vec3 albedo, vec3 normal, float metallic, float roughness, float ao);
 vec3 CalcAmbient(vec3 albedo, vec3 normal, float metallic, float roughness, float ao);
 vec3 getNormalFromMap(){
-    vec3 tangentNormal = texture(material.normal, texCoord).xyz * 2.0 - 1.0;
+    vec3 tangentNormal = texture(normalTex, texCoord).xyz * 2.0 - 1.0;
 
     //vec3 Q1  = dFdx(worldPos);
     //vec3 Q2  = dFdy(worldPos);
@@ -147,17 +142,17 @@ void main(){
 	float roughness;
 	float ao;
 
-	if(useAlbedo) albedo = texture(material.albedo, texCoord).rgb;
-	if(useMetallic) metallic = texture(material.metallic, texCoord).r;
-	if(useRoughness) roughness = texture(material.roughness, texCoord).r;
+	if(useAlbedo) albedo = texture(albedoTex, texCoord).rgb;
+	if(useMetallic) metallic = texture(metallicTex, texCoord).r;
+	if(useRoughness) roughness = texture(roughnessTex, texCoord).r;
 	else roughness = 1.f;
 
-	if(useAmbientMap) ao = texture(material.AO, texCoord).r;
+	if(useAmbientMap) ao = texture(AOTex, texCoord).r;
 	else ao = 1.f;
 
 	if(transformSRGB) albedo = pow(albedo, vec3(2.2f));
 
-	if(!useNormalMap || texture(material.normal, texCoord).rgb == vec3(0.f) || TBN == mat3(0.f)) //If normalMap is empty or you cant transform a normal map to a normal vector just use the vertex normal vector
+	if(!useNormalMap || texture(normalTex, texCoord).rgb == vec3(0.f) || TBN == mat3(0.f)) //If normalMap is empty or you cant transform a normal map to a normal vector just use the vertex normal vector
 		aNormal = normal;
 	else
 		aNormal = getNormalFromMap();

@@ -14,7 +14,6 @@ public:
 	bool inUse = false;
 	bool resultReady = false;
 	int result = 0;
-	int param;
 
 	void loadQuery(int type) {
 		this->type = type;
@@ -63,6 +62,49 @@ public:
 
 		return this->result;
 	}
+};
+class QueryCounter{
+public:
+	unsigned int id;
+	bool resultReady = false;
+	int result = 0;
 
+	void loadQuery() {
+		if (!id) glGenQueries(1, &id);
+
+		//Activate and deactivate the query as glGenQueries activates it which gives errors
+		glBeginQuery(GL_TIMESTAMP, this->id);
+		glEndQuery(GL_TIMESTAMP);
+	}
+	QueryCounter( int type) {
+		loadQuery();
+	}
+	QueryCounter() = default;
+	~QueryCounter() {
+		glDeleteQueries(1, &id);
+	}
+
+	void queryTime() {
+		if (isResultReady())
+			getResult();
+
+		glQueryCounter(this->id, GL_TIMESTAMP);
+	}
+	bool isResultReady() {
+		int param;
+
+		glGetQueryObjectiv(this->id, GL_QUERY_RESULT_AVAILABLE, &param);
+		return param == GL_TRUE;
+		//if (param == 0)
+		//	return true;
+		//else if (param == 1) {
+		//	return false;
+		//}
+		//else //Ignoring errors
+		//	return false;
+	}
+	void getResult() {
+		glGetQueryObjectiv(this->id, GL_QUERY_RESULT, &this->result);
+	}
 };
 #endif
