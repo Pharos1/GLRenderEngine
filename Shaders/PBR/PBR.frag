@@ -50,8 +50,7 @@ uniform bool dirLightEnabled;
 uniform bool pointLightEnabled;
 uniform bool spotLightEnabled;
 
-// IBL
-
+//IBL
 uniform vec3 viewPos;
 
 uniform bool iblEnabled;

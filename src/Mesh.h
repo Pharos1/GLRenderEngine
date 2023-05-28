@@ -63,52 +63,8 @@ class Mesh {
 public:
 	std::vector<Vertex>       vertices;
 	std::vector<unsigned int> indices;
-	unsigned int VAO;
-	/*
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures) {
-		this->vertices = vertices;
-		this->indices = indices;
-		this->textures = textures;
+	unsigned int VAO, VBO, EBO;
 
-		setupMesh();
-	}
-	*/
-	/*
-	void Draw(Shader& shader){
-		unsigned int diffuseNr = 1;
-		unsigned int specularNr = 1;
-		for (unsigned int i = 0; i < textures.size(); i++){
-			string number;
-			string name = textures[i].type;
-
-
-			if (name == "texture_diffuse") number = std::to_string(diffuseNr++);
-			else if (name == "texture_specular") number = std::to_string(specularNr++);
-
-			//std::cout << ("material." + name + number).c_str();
-
-			shader.set1i(("material." + name + number).c_str(), i);
-			//std::cout << number;
-			//glUniform1i(glGetUniformLocation(shader.getID(), ("material." + name + number).c_str()), i);
-			//std::cout << textures.size() << std::endl;
-			textures[i].bind(i);
-		}
-
-		// draw mesh
-		glBindVertexArray(VAO);
-		//std::cout << indices.size() << std::endl;
-		if (indices.size() != 0) {
-			glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-		}
-		else {
-			glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-		}
-		glBindVertexArray(0);
-
-		glActiveTexture(GL_TEXTURE0);
-	}
-	*/
-	unsigned int VBO, EBO;
 	void setupMesh(){
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -125,19 +81,14 @@ public:
 
 		//Vertex attribute pointers
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-		glEnableVertexAttribArray(0);
-
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-		glEnableVertexAttribArray(1);
-
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
-		glEnableVertexAttribArray(2);
-
 		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
+		
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
 		glEnableVertexAttribArray(3);
-
-		//glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
-		//glEnableVertexAttribArray(4);
 	}
 };
 class ClassicMesh : public Mesh {
@@ -152,39 +103,14 @@ public:
 
 	void Draw(Shader& shader) {
 		shader.use();
-		/*
-		unsigned int diffuseNr = 1;
-		unsigned int specularNr = 1;
-		for (unsigned int i = 0; i < textures.size(); i++) {
-			string number;
-			string name = textures[i].type;
-
-
-			if (name == "texture_diffuse") number = std::to_string(diffuseNr++);
-			else if (name == "texture_specular") number = std::to_string(specularNr++);
-			else number = "1";
-			//std::cout << ("material." + name + number).c_str() << std::endl;
-
-			shader.set1i(("material." + name + number).c_str(), i); //This could be move to the setup func for performance sake
-			//std::cout << number;
-			//glUniform1i(glGetUniformLocation(shader.getID(), ("material." + name + number).c_str()), i);
-			//std::cout << textures.size() << std::endl;
-			textures[i].bind(i);
-		}
-		*/
-
-		// draw mesh
 		glBindVertexArray(VAO);
-		//std::cout << indices.size() << std::endl;
-		if (indices.size() != 0) {
-			glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-		}
-		else {
-			glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-		}
-		glBindVertexArray(0);
 
-		glActiveTexture(GL_TEXTURE0);
+		if (indices.empty())
+			glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+		else
+			glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+		glBindVertexArray(0);
 	}
 };
 class MaterialMesh : public Mesh {
@@ -192,8 +118,6 @@ public:
 	Material material;
 	Material* currentMaterial = &material;
 	
-	//glm::mat4 localModelMat(1.f);
-
 	MaterialMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices = {}, Material material = Material()) {
 		this->vertices = vertices;
 		this->indices = indices;
@@ -213,18 +137,15 @@ public:
 		shader.use();
 
 		currentMaterial->bind(shader);
-
 		glBindVertexArray(VAO);
-
-		if (indices.size() != 0)
-			glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-		else
+		
+		if (indices.empty())
 			glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+		else
+			glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
 		glBindVertexArray(0);
-
 		currentMaterial->unbind();
-		glActiveTexture(GL_TEXTURE0);
 	}
 };
 class Skybox { //TODO: EVERYTHING HERE IS MESSED UP AND HAS TO BE FIXED
@@ -315,15 +236,17 @@ public:
 		glEnableVertexAttribArray(0);
 	}
 	void Draw(Shader& shader) {
-		shader.use();
-		//texture.bind(0);
-
 		glDepthFunc(GL_LEQUAL);
 
+		shader.use();
+
+		texturePtr->bind(0);
 		glBindVertexArray(VAO);
+		
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
 		glBindVertexArray(0);
-		//texture.unbind(0);
+		texturePtr->unbind(0);
 
 		glDepthFunc(GL_LESS);
 	}
@@ -338,30 +261,25 @@ public:
 	}
 	RenderQuad() {};
 
-	void Draw(Shader& shader, std::vector<unsigned int> textureIDs, int firstIndex = 0) {
+	void Draw(Shader& shader, std::vector<unsigned int> textureIDs, int offset = 0) {
 		// draw mesh
 		shader.use();
 
 		for(int i = 0; i < textureIDs.size(); i++){
-			glActiveTexture(GL_TEXTURE0 + i + firstIndex);
+			glActiveTexture(GL_TEXTURE0 + i + offset);
 			glBindTexture(GL_TEXTURE_2D, textureIDs[i]);
 		}
 
 		glDepthFunc(GL_ALWAYS);
 		glBindVertexArray(VAO);
 
-		if (indices.size() != 0) {
-			glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-		}
-		else {
+		if (indices.empty())
 			glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-		}
-		glBindVertexArray(0);
+		else
+			glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
-		glActiveTexture(GL_TEXTURE0);
-
-		//Default options
 		glDepthFunc(GL_LESS);
+		glBindVertexArray(0);
 	}
 };
 #endif

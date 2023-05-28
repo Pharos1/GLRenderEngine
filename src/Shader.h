@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef SHADER
 #define SHADER
 
@@ -12,8 +10,6 @@
 //Note: Shaders remove inactive uniforms i.e. uniforms that don't contribute to the final result.
 class Shader {
 private:
-	unsigned int ID;
-
 	void checkCompileErrors(GLuint shader, std::string type) {
 		GLint success;
 		GLchar infoLog[1024];
@@ -33,6 +29,7 @@ private:
 		}
 	}
 public:
+	unsigned int ID = 0;
 	void loadShader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) {
 		std::string vertexContent;
 		std::string fragmentContent;
@@ -58,8 +55,8 @@ public:
 
 			vertexContent = vShaderStream.str();
 			fragmentContent = fShaderStream.str();
-			if (geometryPath != nullptr)
-			{
+
+			if (geometryPath != nullptr){
 				gShaderFile.open(geometryPath);
 				std::stringstream gShaderStream;
 				gShaderStream << gShaderFile.rdbuf();
@@ -78,7 +75,7 @@ public:
 
 		GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
 		GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
-		GLuint geometry = glCreateShader(GL_GEOMETRY_SHADER);
+		GLuint geometry = (geometryPath != nullptr) ? glCreateShader(GL_GEOMETRY_SHADER) : 0;
 		int success;
 		char infoLog[512];
 
@@ -100,34 +97,40 @@ public:
 			checkCompileErrors(geometry, "GEOMETRY");
 		}
 
-
 		//Define shader program
-		ID = glCreateProgram();
+		if(!ID) ID = glCreateProgram(); //If it doesn't have an ID just give it
+
 		glAttachShader(ID, vertex);
 		glAttachShader(ID, fragment);
 		if (geometryPath != nullptr) glAttachShader(ID, geometry);
 		glLinkProgram(ID);
 
 		//Check for errors
-		//glGetProgramiv(ID, GL_LINK_STATUS, &success);
-		//if (!success) {
-		//	glGetProgramInfoLog(ID, 512, NULL, infoLog);
-		//	std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED" << std::endl << infoLog << std::endl;
-		//}
+		glGetProgramiv(ID, GL_LINK_STATUS, &success);
+		if (!success) {
+			glGetProgramInfoLog(ID, 512, NULL, infoLog);
+			std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED" << std::endl << infoLog << std::endl;
+		}
 
 		//Clear the shader after they are linked
+		glDetachShader(ID, vertex);
+		glDetachShader(ID, fragment);
+		if (geometryPath != nullptr) glDetachShader(ID, geometry);
+
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
-		glDeleteShader(geometry);
+		if (geometryPath != nullptr) glDeleteShader(geometry);
 	}
 	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) {
 		loadShader(vertexPath, fragmentPath, geometryPath);
 	};
 	Shader() {};
+	~Shader() { deleteProgram(); };
 
-	int getID() { return ID; }
+	int getID() { return ID; };
 	void use() { glUseProgram(ID); };
-	void unuse() { glDeleteProgram(ID); };
+	void unuse() { glUseProgram(0); };
+	void deleteProgram() { glDeleteProgram(ID); };
 
 	void set1b(const std::string& name, bool value) {
 		int location = glGetUniformLocation(ID, name.c_str());

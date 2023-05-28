@@ -172,7 +172,7 @@ uniform float SUBPIXEL_QUALITY;
 
 float QUALITY[7] = {1.5, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0};
 
-/*All credits to Simon Rodriguez for explaining FXAA in detail while making it easy to comprehand(http://blog.simonrodriguez.fr/articles/2016/07/implementing_fxaa.html).*/
+/*All credits to Simon Rodriguez for explaining FXAA in detail while also making it easy to comprehand(http://blog.simonrodriguez.fr/articles/2016/07/implementing_fxaa.html).*/
 vec3 fxaa(){
 	vec3 colorCenter = texture(colorBuffer, texCoord).rgb;
 

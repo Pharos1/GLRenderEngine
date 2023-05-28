@@ -366,29 +366,27 @@ int main() {
 	//Change the current path (in case the file is run outside the IDE). Also this should be changed if i would release a seperate built .exe file(Now the current dir is being set to the solution path.
 	std::filesystem::current_path(std::filesystem::path(__FILE__).parent_path().parent_path()); //The solution path
 	
-	if(setupDependencies()) return -1; //If result is different than 0 then stop
+	if(setupDependencies()) return -1;
 
 	//Shaders
-	shader = Shader("Shaders/main.vert", "Shaders/main.frag");
+	shader.loadShader("Shaders/main.vert", "Shaders/main.frag");
 	//skyboxShader = Shader("Shaders/skybox.vert", "Shaders/skybox.frag");
-	deferredShader = Shader("Shaders/main.vert", "Shaders/deferred.frag");
-	postprocShader = Shader("Shaders/renderQuad.vert", "Shaders/postProc.frag");
-	blurShader = Shader("Shaders/renderQuad.vert", "Shaders/blur.frag");
-	debugQuadShader = Shader("Shaders/renderQuad.vert", "Shaders/renderQuad.frag");
-	PBRShader = Shader("Shaders/PBR/PBR.vert", "Shaders/PBR/PBR.frag");
-	equirectangularToCubemapShader = Shader("Shaders/cubemap.vert", "Shaders/PBR/EquirectangularToCubemap.frag");
-	hdrSkyboxShader = Shader("Shaders/skybox.vert", "Shaders/PBR/hdrSkybox.frag");
-	irradianceShader = Shader("Shaders/cubemap.vert", "Shaders/PBR/irradianceConvolution.frag");
-	prefilterShader = Shader("Shaders/cubemap.vert", "Shaders/PBR/prefilter.frag");
-	brdfShader = Shader("Shaders/renderQuad.vert", "Shaders/PBR/brdfShader.frag");
-	lightBoxShader = Shader("Shaders/lightBox.vert", "Shaders/lightBox.frag");
+	deferredShader.loadShader("Shaders/main.vert", "Shaders/deferred.frag");
+	postprocShader.loadShader("Shaders/renderQuad.vert", "Shaders/postProc.frag");
+	blurShader.loadShader("Shaders/renderQuad.vert", "Shaders/blur.frag");
+	debugQuadShader.loadShader("Shaders/renderQuad.vert", "Shaders/renderQuad.frag");
+	PBRShader.loadShader("Shaders/PBR/PBR.vert", "Shaders/PBR/PBR.frag");
+	equirectangularToCubemapShader.loadShader("Shaders/cubemap.vert", "Shaders/PBR/EquirectangularToCubemap.frag");
+	hdrSkyboxShader.loadShader("Shaders/skybox.vert", "Shaders/PBR/hdrSkybox.frag");
+	irradianceShader.loadShader("Shaders/cubemap.vert", "Shaders/PBR/irradianceConvolution.frag");
+	prefilterShader.loadShader("Shaders/cubemap.vert", "Shaders/PBR/prefilter.frag");
+	brdfShader.loadShader("Shaders/renderQuad.vert", "Shaders/PBR/brdfShader.frag");
+	lightBoxShader.loadShader("Shaders/lightBox.vert", "Shaders/lightBox.frag");
 
 	//Matrices
 	proj = glm::perspective(glm::radians(fov), SCR_WIDTH / (float)SCR_HEIGHT, .1f, 100.f);
 
 	shader.use();
-	shader.setMat4("model", model);
-	shader.setMat4("view", view);
 	shader.setMat4("proj", proj);
 
 	renderQuad = RenderQuad(quadVertices);
@@ -405,119 +403,6 @@ int main() {
 	lightBoxShader.use();
 	lightBoxShader.setVec3("pos", pointLight.pos);
 	lightBoxShader.setVec3("diffuse", pointLight.diffuse);
-
-	/* SHADOWS //NOTE: I can use this code for dirLight. For spotLight use this but with perspective, and for pointLight use the cubemap shadow version(with perspective projection).
-	glm::vec3 lightPos = glm::vec3(-3.0f, 6.0f, -2.0f);
-
-	shader.setVec3("dirLight.direction", -lightPos);
-	shader.setVec3("dirLight.ambient", glm::vec3(.1f));
-	shader.setVec3("dirLight.diffuse", glm::vec3(1.f));
-	shader.setVec3("dirLight.specular", glm::vec3(.3f));
-
-	ClassicMesh shadowGround(planeVertices, {}, { Texture("Images/wood.png"), Texture("Images/White.png", "texture_specular")});
-	ClassicMesh shadowCube(cubeVertices, {}, { Texture("Images/container2.png"), Texture("Images/container2_specular.png", "texture_specular") });
-
-	glm::mat4 shadowGroundModel = planeModel;
-	glm::mat4 shadowCube1Model(1.f);
-	glm::mat4 shadowCube2Model(1.f);
-	glm::mat4 shadowCube3Model(1.f);
-
-	shadowCube1Model = glm::translate(shadowCube1Model, glm::vec3(2.f, 0.5001f, 3.f));
-	shadowCube2Model = glm::translate(shadowCube2Model, glm::vec3(-2.f, 3.f, 3.f));
-	shadowCube3Model = glm::translate(shadowCube3Model, glm::vec3(2.f, 2.f, -1.f));
-	shadowCube3Model = glm::rotate(shadowCube3Model, glm::radians(45.f), glm::vec3(1.f, 1.f, 0.f));
-
-	//Shadow Map
-	unsigned int depthMapFBO;
-	glGenFramebuffers(1, &depthMapFBO);
-
-	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
-	// create depth texture
-	unsigned int depthMap;
-	glGenTextures(1, &depthMap);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-	// attach depth texture as FBO's depth buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	float near_plane = 1.0f, far_plane = 15.f;
-	glm::mat4 lightProj = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
-
-	glm::mat4 lightView = glm::lookAt(lightPos,
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 lightSpaceMatrix = lightProj * lightView;
-
-	Shader simpleDepthShader("Shaders/shadow.vert", "Shaders/shadow.frag");
-	*/
-	/*SHADOWS(cubemap)
-	ClassicMesh shadowGround(planeVertices, {}, { ClassicTexture("Images/wood.png"), ClassicTexture("Images/White.png", "texture_specular") });
-	ClassicMesh shadowCube(cubeVertices, {}, { ClassicTexture("Images/container2.png"), ClassicTexture("Images/container2_specular.png", "texture_specular") });
-
-	glm::mat4 shadowGroundModel = planeModel;
-	glm::mat4 shadowCube1Model(1.f);
-	glm::mat4 shadowCube2Model(1.f);
-	glm::mat4 shadowCube3Model(1.f);
-
-	shadowCube1Model = glm::translate(shadowCube1Model, glm::vec3(2.f, 0.5001f, 3.f));
-	shadowCube2Model = glm::translate(shadowCube2Model, glm::vec3(-2.f, 3.f, 3.f));
-	shadowCube3Model = glm::translate(shadowCube3Model, glm::vec3(2.f, 2.f, -1.f));
-	shadowCube3Model = glm::rotate(shadowCube3Model, glm::radians(45.f), glm::vec3(1.f, 1.f, 0.f));
-
-	glm::vec3 lightPos = pointLight.pos;
-
-	unsigned int depthMapFBO;
-	glGenFramebuffers(1, &depthMapFBO);
-
-	unsigned int depthCubemap;
-	glGenTextures(1, &depthCubemap);
-
-	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
-	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-	for (unsigned int i = 0; i < 6; ++i)
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
-			SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	float aspect = (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT;
-	float near = 1.0f;
-	float far = 25.0f;
-	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
-
-	std::vector<glm::mat4> shadowTransforms;
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 0.0,-1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 0.0,-1.0), glm::vec3(0.0, -1.0, 0.0)));
-
-	Shader simpleDepthShader("Shaders/cubemapShadow.vert", "Shaders/cubemapShadow.frag", "Shaders/cubemapShadow.geom");
-	*/
 
 	initBloom();
 	initDeferredShading();
@@ -552,102 +437,7 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		//glCheckError();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		/* SHADOWS
-		//render scene from light's point of view
-		simpleDepthShader.use();
-		simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
-
-		//glCullFace(GL_FRONT);
-
-		simpleDepthShader.setMat4("model", shadowGroundModel);
-		shadowGround.Draw(simpleDepthShader);
-
-		simpleDepthShader.setMat4("model", shadowCube1Model);
-		shadowCube.Draw(simpleDepthShader);
-		simpleDepthShader.setMat4("model", shadowCube2Model);
-		shadowCube.Draw(simpleDepthShader);
-		simpleDepthShader.setMat4("model", shadowCube3Model);
-		shadowCube.Draw(simpleDepthShader);
-
-		//glCullFace(GL_BACK);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// reset viewport
-		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		shader.use();
-		shader.set1i("shadowMap", 2);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
-		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-		shader.setMat4("model", shadowGroundModel);
-		shadowGround.Draw(shader);
-
-		shader.setMat4("model", shadowCube1Model);
-		shadowCube.Draw(shader);
-		shader.setMat4("model", shadowCube2Model);
-		shadowCube.Draw(shader);
-		shader.setMat4("model", shadowCube3Model);
-		shadowCube.Draw(shader);
-		*/
-		/* SHADOWS(cubemap)
-		//render scene from light's point of view
-		simpleDepthShader.use();
-
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
-
-		simpleDepthShader.setVec3("lightPos", pointLight.pos);
-		simpleDepthShader.set1f("far_plane", far);
-
-		for (int i = 0; i < shadowTransforms.size(); i++) {
-			simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-		}
-
-		renderScene(simpleDepthShader);
-
-		//simpleDepthShader.setMat4("model", shadowGroundModel);
-		//shadowGround.Draw(simpleDepthShader);
-		//
-		//simpleDepthShader.setMat4("model", shadowCube1Model);
-		//shadowCube.Draw(simpleDepthShader);
-		//simpleDepthShader.setMat4("model", shadowCube2Model);
-		//shadowCube.Draw(simpleDepthShader);
-		//simpleDepthShader.setMat4("model", shadowCube3Model);
-		//shadowCube.Draw(simpleDepthShader);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		// 2. then render scene as normal with shadow mapping (using depth cubemap)
-		shader.use();
-
-		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		shader.set1i("depthMap", 2);
-		shader.set1f("far_plane", far);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-
-		renderScene(shader);
-
-		//shader.setMat4("model", shadowGroundModel);
-		//shadowGround.Draw(shader);
-		//
-		//shader.setMat4("model", shadowCube1Model);
-		//shadowCube.Draw(shader);
-		//shader.setMat4("model", shadowCube2Model);
-		//shadowCube.Draw(shader);
-		//shader.setMat4("model", shadowCube3Model);
-		//shadowCube.Draw(shader);
-		*/
-		
+				
 		if (deferredShadingEnabled) {
 			deferredShader.use();
 			glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
@@ -720,7 +510,6 @@ int main() {
 		updateUniforms(shader);
 		updateUniforms(PBRShader);
 		updateUniforms(deferredShader);
-
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -846,15 +635,15 @@ void setupPBR() {
 	PBRSkybox.texturePtr = &hdrTexture;
 
 	if (currentSkybox == 0)
-		hdrTexture.loadHDRMap("Images/abandoned_tiled_room_2k.hdr");
+		hdrTexture.loadHDRMap("Images/HDRI/abandoned_tiled_room_2k.hdr");
 	else if (currentSkybox == 1)
-		hdrTexture.loadHDRMap("Images/abandoned_tiled_room_4k.hdr");
+		hdrTexture.loadHDRMap("Images/HDRI/abandoned_tiled_room_4k.hdr");
 	else if(currentSkybox == 2)
-		hdrTexture.loadHDRMap("Images/HDR_029_Sky_Cloudy_Ref.hdr");
+		hdrTexture.loadHDRMap("Images/HDRI/HDR_029_Sky_Cloudy_Ref.hdr");
 	else if(currentSkybox == 3)
-		hdrTexture.loadHDRMap("Images/thatch_chapel_2k.hdr");
+		hdrTexture.loadHDRMap("Images/HDRI/thatch_chapel_2k.hdr");
 	else if (currentSkybox == 4)
-		hdrTexture.loadHDRMap("Images/thatch_chapel_4k.hdr");
+		hdrTexture.loadHDRMap("Images/HDRI/thatch_chapel_4k.hdr");
 
 	//Set uniforms
 	PBRShader.use();
@@ -1257,7 +1046,6 @@ void setupPostProc() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	postprocShader.use();
-	//postprocFlags.set(postprocShader, "flags");
 	postprocShader.set1b("gammaOn", gammaOn);
 	postprocShader.set1b("bloomOn", bloomOn);
 	postprocShader.set1b("blurOn", blurOn);
@@ -1384,26 +1172,6 @@ void updateUniforms(Shader& shader) {
 	shader.setMat4("model", model);
 }
 void renderScene(Shader& shader, Shader& PBRShader) {
-	/*shader.use();
-
-	shader.setMat4("model", planeModel);
-	shader.setVec3("pos", planePos);
-	plane.Draw(shader);
-	shader.setMat4("model", glm::mat4(1.f)); //Set the uniform to default
-
-	//shader.setMat4("model", cube1Model);
-	//cube1Model = glm::rotate(cube1Model, glm::radians(0.1f), glm::vec3(0.f, 1.f, 0.f));
-	shader.setVec3("pos", cube1Pos);
-	shader.setMat4("model", cube1Model);
-	cube.Draw(shader);
-
-	//shader.setMat4("model", cube2Model);
-	shader.setVec3("pos", cube2Pos);
-	cube.Draw(shader);
-
-	//Draw Skybox last
-	if (drawSkybox) skybox.Draw(skyboxShader, view, proj);
-	*/
 	renderPass.begin();
 
 	if (pbrEnabled) {
@@ -1425,15 +1193,9 @@ void renderScene(Shader& shader, Shader& PBRShader) {
 		modelPtr->Draw(shader);
 	}
 
-	//PBR Skybox
 	hdrSkyboxShader.use();
 	hdrSkyboxShader.setMat4("view", view);
-
-	glDepthFunc(GL_LEQUAL);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 	PBRSkybox.Draw(hdrSkyboxShader);
-	glDepthFunc(GL_LESS);
 
 	renderPass.end();
 }
@@ -1479,12 +1241,13 @@ void endPostProcess() {
 	postprocPass.end();
 }
 void updateImGui() {
+	guiPass.begin();
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	NewFrame();
 
 	io = GetIO();
-	guiPass.begin();
 
 	ImGuiStyle& style = GetStyle();
 
@@ -1518,7 +1281,7 @@ void updateImGui() {
 				Combo("Material##0", &materialState, materials, 6);
 
 				NewLine();
-				if (Button("Apply", ImVec2(50.f, 20.f)))
+				if (Button("Apply"))
 					updateMaterial();
 
 				TreePop();
@@ -1531,7 +1294,7 @@ void updateImGui() {
 				PopItemWidth();
 
 				NewLine();
-				if (Button("Apply", ImVec2(50.f, 20.f)))
+				if (Button("Apply"))
 					updateCurrentModel();
 				
 				NewLine();
@@ -1897,7 +1660,7 @@ void updateImGui() {
 				fxaaRevert = true;
 			}
 			if (fxaaRevert) {
-				if(Button("Revert##0", ImVec2(50.f, 20.f))) {
+				if(Button("Revert")) {
 					EDGE_THRESHOLD_MIN = DEFAULT_EDGE_THRESHOLD_MIN;
 					EDGE_THRESHOLD_MAX = DEFAULT_EDGE_THRESHOLD_MAX;
 					ITERATIONS		   = DEFAULT_ITERATIONS;
@@ -1954,6 +1717,74 @@ void updateImGui() {
 			}
 			TreePop();
 		}
+	}
+	if (CollapsingHeader("Shaders")) {
+		if (Button("Reload")) {
+			shader.loadShader("Shaders/main.vert", "Shaders/main.frag");
+
+			shader.use();
+			dirLight.set(shader, "dirLight");
+			pointLight.set(shader, "pointLights[0]");
+			spotLight.set(shader, "spotLight");
+
+			shader.set1b("dirLightEnabled", dirLightEnabled);
+			shader.set1b("pointLightEnabled", pointLightEnabled);
+			shader.set1b("spotLightEnabled", spotLightEnabled);
+			shader.setMat4("proj", proj);
+			
+			shader.set1b("transformSRGB", transformSRGB);
+		}
+		SameLine(); Text("Main Shader");
+
+		if (Button("Reload##0")) {
+			postprocShader.loadShader("Shaders/renderQuad.vert", "Shaders/postProc.frag");
+
+			postprocShader.use();
+			//postprocFlags.set(postprocShader, "flags");
+			postprocShader.set1b("gammaOn", gammaOn);
+			postprocShader.set1b("bloomOn", bloomOn);
+			postprocShader.set1b("blurOn", blurOn);
+
+			postprocShader.set1f("exposure", exposure);
+			postprocShader.set1f("gamma", gamma);
+			postprocShader.set1f("maxRadiance", maxRadiance);
+			postprocShader.set1i("tonemapMode", tonemapMode);
+
+			//FXAA
+			postprocShader.set1b("fxaaEnabled", antiAliasing == 2);
+			postprocShader.setVec2("inverseScreenSize", glm::vec2(1.f / SCR_WIDTH, 1.f / SCR_HEIGHT));
+			postprocShader.set1f("EDGE_THRESHOLD_MIN", EDGE_THRESHOLD_MIN);
+			postprocShader.set1f("EDGE_THRESHOLD_MAX", EDGE_THRESHOLD_MAX);
+			postprocShader.set1i("ITERATIONS", ITERATIONS);
+			postprocShader.set1f("SUBPIXEL_QUALITY", SUBPIXEL_QUALITY);
+		}
+		SameLine(); Text("Post-processing Shader");
+
+		if (Button("Reload##1")) {
+			PBRShader.loadShader("Shaders/PBR/PBR.vert", "Shaders/PBR/PBR.frag");
+
+			PBRShader.use();
+			PBRShader.setMat4("proj", proj);
+			
+			dirLight.set(PBRShader, "dirLight");
+			pointLight.set(PBRShader, "pointLights[0]");
+			spotLight.set(PBRShader, "spotLight");
+
+			PBRShader.set1b("pointLightEnabled", pointLightEnabled);
+			PBRShader.set1b("dirLightEnabled", dirLightEnabled);
+			PBRShader.set1b("spotLightEnabled", spotLightEnabled);
+
+			PBRShader.set1b("iblEnabled", iblEnabled);
+
+			PBRShader.set1b("useAlbedo", useAlbedo);
+			PBRShader.set1b("useNormalMap", useNormalMap);
+			PBRShader.set1b("useMetallic", useMetallic);
+			PBRShader.set1b("useRoughness", useRoughness);
+			PBRShader.set1b("useAlbedo", useAmbientMap);
+
+			PBRShader.set1b("transformSRGB", transformSRGB);
+		}
+		SameLine(); Text("PBR Shader");
 	}
 	if (CollapsingHeader("Profiling", ImGuiTreeNodeFlags_DefaultOpen)) {
 		Text(("IMGUI Average framerate: " + std::to_string((int)io.Framerate) + " FPS").c_str());

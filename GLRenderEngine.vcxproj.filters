@@ -136,6 +136,7 @@
     <None Include="Shaders\lightBox.vert" />
     <None Include="Shaders\lightBox.frag" />
     <None Include="README.md" />
+    <None Include="Shaders\hdr.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\bottleneck.txt" />
